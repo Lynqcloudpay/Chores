@@ -18,6 +18,7 @@ import { MobileShell } from "@/components/MobileShell";
 import { PathToParity } from "@/components/PathToParity";
 import { PendingApprovals } from "@/components/PendingApprovals";
 import { RecentActivity } from "@/components/RecentActivity";
+import { ResetHouseholdSection } from "@/components/ResetHouseholdSection";
 import { isApproved, isPending } from "@/lib/contribution-status";
 import type { ProofCaptureResult } from "@/components/ProofCaptureModal";
 
@@ -631,6 +632,13 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=…`}
               currentUserId={userId ?? ""}
               onChangeEffort={(r) => setEffortRevisionRow(r)}
               onRefresh={() => void refreshWeekData(household.id)}
+            />
+            <ResetHouseholdSection
+              householdId={household.id}
+              onResetComplete={async () => {
+                await refreshWeekData(household.id);
+                await loadHouseholdRow(household.id);
+              }}
             />
             <p className="border-t border-outline-variant/10 pt-4 text-center text-[11px] leading-relaxed text-on-surface-variant">
               Use the center <span className="font-semibold text-on-surface">+</span> below to log. Weeks reset Sunday
