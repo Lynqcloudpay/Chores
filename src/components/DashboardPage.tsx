@@ -8,7 +8,6 @@ import { AppHeader } from "@/components/AppHeader";
 import { ChoreLegend } from "@/components/ChoreLegend";
 import { ContributionGapHero } from "@/components/ContributionGapHero";
 import { DashboardHints } from "@/components/DashboardHints";
-import { ChoreVpSettings } from "@/components/ChoreVpSettings";
 import { DashboardWeekSkeleton } from "@/components/DashboardWeekSkeleton";
 import { DelegationAsks } from "@/components/DelegationAsks";
 import { CompleteSetupForm } from "@/components/CompleteSetupForm";
@@ -17,8 +16,7 @@ import { EquityEngineWelcome } from "@/components/EquityEngineWelcome";
 import { MobileShell } from "@/components/MobileShell";
 import { PathToParity } from "@/components/PathToParity";
 import { PendingApprovals } from "@/components/PendingApprovals";
-import { RecentActivity } from "@/components/RecentActivity";
-import { countsTowardVp, isApproved, isPending } from "@/lib/contribution-status";
+import { countsTowardVp, isPending } from "@/lib/contribution-status";
 import type { ProofCaptureResult } from "@/components/ProofCaptureModal";
 
 const ContributionModal = dynamic(
@@ -253,17 +251,14 @@ export function DashboardPage() {
     router.replace("/", { scroll: false });
   }, [searchParams, router, profile, household]);
 
-  /** Deep link /#/activity-log after dashboard content is ready (e.g. from History tab). */
+  /** Old bookmarks /#/activity-log → dedicated Logs tab. */
   useEffect(() => {
-    if (loading || !household?.id) return;
-    if (typeof window === "undefined" || window.location.hash !== "#activity-log") return;
-    const id = window.setTimeout(() => {
-      document.getElementById("activity-log")?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 100);
-    return () => window.clearTimeout(id);
-  }, [loading, household?.id]);
+    if (typeof window === "undefined") return;
+    if (window.location.hash === "#activity-log") {
+      router.replace("/logs");
+    }
+  }, [router]);
 
-  const approvedRows = useMemo(() => weekRows.filter(isApproved), [weekRows]);
   const countingRows = useMemo(() => weekRows.filter(countsTowardVp), [weekRows]);
   const pendingIncoming = useMemo(
     () =>
@@ -590,17 +585,6 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=…`}
               householdExtraPresets={householdExtraPresets}
               includeGlobalPresets={!household.chore_presets_onboarded_at}
             />
-            {profile ? (
-              <ChoreVpSettings
-                household={household}
-                profile={profile}
-                partner={partner}
-                onRefresh={async () => {
-                  await refreshWeekData(household.id);
-                  await loadHouseholdRow(household.id);
-                }}
-              />
-            ) : null}
             {partner && profile && userId ? (
               <DelegationAsks
                 choreVp={choreVpTiers}
@@ -625,20 +609,16 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=…`}
               onReject={(id) => void handleReject(id)}
               busyId={reviewBusyId}
             />
-            <RecentActivity
-              rows={approvedRows}
-              profile={profile}
-              partner={partner}
-              currentUserId={userId ?? ""}
-              onChangeEffort={(r) => setEffortRevisionRow(r)}
-              onRefresh={() => void refreshWeekData(household.id)}
-            />
             <p className="border-t border-outline-variant/10 pt-4 text-center text-[11px] leading-relaxed text-on-surface-variant">
-              Use the center <span className="font-semibold text-on-surface">+</span> below to log. Weeks reset Sunday
-              midnight ·{" "}
+              Use the center <span className="font-semibold text-on-surface">+</span> to log ·{" "}
+              <Link href="/logs" className="font-medium text-primary underline underline-offset-2">
+                Logs
+              </Link>{" "}
+              for this week&apos;s activity ·{" "}
               <Link href="/history" className="font-medium text-primary underline underline-offset-2">
                 History
-              </Link>
+              </Link>{" "}
+              for past weeks. Weeks reset Sunday midnight.
             </p>
           </>
         )}

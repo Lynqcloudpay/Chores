@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { DisputeModal } from "@/components/DisputeModal";
 import { ProofLinkButton } from "@/components/ProofLinkButton";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -15,6 +15,8 @@ type Props = {
   /** Open effort revision flow for an approved chore you logged. */
   onChangeEffort: (row: ContributionRow) => void;
   onRefresh: () => void;
+  /** When false, the log list starts collapsed (e.g. home dashboard if we show a preview). */
+  initialExpanded?: boolean;
 };
 
 function labelForRow(r: ContributionRow): string {
@@ -48,17 +50,11 @@ export function RecentActivity({
   currentUserId,
   onChangeEffort,
   onRefresh,
+  initialExpanded = true,
 }: Props) {
   const [cancelBusyId, setCancelBusyId] = useState<string | null>(null);
-  /** Expanded by default; user can collapse the whole block. */
-  const [logExpanded, setLogExpanded] = useState(true);
+  const [logExpanded, setLogExpanded] = useState(initialExpanded);
   const [disputeModal, setDisputeModal] = useState<{ row: ContributionRow; phase: "open" | "resolve" } | null>(null);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (window.location.hash !== "#activity-log") return;
-    setLogExpanded(true);
-  }, [rows.length]);
 
   const idToName = new Map<string, string>();
   idToName.set(profile.id, profile.display_name);

@@ -58,7 +58,8 @@ export function PendingApprovals({
         <strong className="text-on-surface">Custom chores</strong> and{" "}
         <strong className="text-on-surface">effort changes</strong> on logged chores need your partner&apos;s OK.
         Financial entries and preset chores without changes are counted as soon as they&apos;re added. If you later think
-        proof was faked, use <strong className="text-on-surface">Dispute proof</strong> in Recent activity.
+        proof was faked, use <strong className="text-on-surface">Dispute proof</strong> on the{" "}
+        <strong className="text-on-surface">Logs</strong> tab.
       </p>
 
       {incoming.length > 0 ? (

@@ -13,7 +13,7 @@ type Props = {
 
 const items: { key: NavKey; href: string; label: string; icon: string }[] = [
   { key: "dashboard", href: "/", label: "Home", icon: "home" },
-  { key: "logs", href: "/#activity-log", label: "Logs", icon: "list_alt" },
+  { key: "logs", href: "/logs", label: "Logs", icon: "list_alt" },
   { key: "history", href: "/history", label: "History", icon: "calendar_month" },
 ];
 
@@ -33,13 +33,10 @@ function NavIcon({ name, active }: { name: string; active: boolean }) {
   );
 }
 
-function scrollToActivityLog() {
-  document.getElementById("activity-log")?.scrollIntoView({ behavior: "smooth", block: "start" });
-}
-
 export function MobileShell({ children, active, onAddContribution }: Props) {
   const pathname = usePathname();
   const accountOn = pathname === "/account" || active === "account";
+  const logsOn = pathname === "/logs" || active === "logs";
 
   const tab = (isOn: boolean) =>
     `flex min-h-[48px] min-w-0 flex-1 flex-col items-center justify-center gap-0.5 px-1 py-1 text-[10px] font-semibold transition-colors ${
@@ -81,24 +78,18 @@ export function MobileShell({ children, active, onAddContribution }: Props) {
       >
         <div className="mx-auto flex h-14 max-w-2xl items-center justify-between gap-1 px-2">
           {items.slice(0, 2).map((item) => {
-            const isAct = item.key === active;
+            const isAct =
+              item.key === "dashboard"
+                ? pathname === "/"
+                : item.key === "logs"
+                  ? logsOn
+                  : item.key === active;
             return (
               <Link
                 key={item.key}
                 href={item.href}
                 className={tab(isAct)}
                 scroll={item.key !== "logs"}
-                onClick={
-                  item.key === "logs"
-                    ? (e) => {
-                        if (pathname === "/") {
-                          e.preventDefault();
-                          scrollToActivityLog();
-                          window.history.replaceState(null, "", "/#activity-log");
-                        }
-                      }
-                    : undefined
-                }
               >
                 <NavIcon name={item.icon} active={isAct} />
                 <span className="max-w-[64px] truncate">{item.label}</span>
@@ -109,7 +100,7 @@ export function MobileShell({ children, active, onAddContribution }: Props) {
           <div className="flex flex-1 justify-center">{AddControl}</div>
 
           {items.slice(2).map((item) => {
-            const isAct = item.key === active;
+            const isAct = item.key === "history" ? pathname === "/history" : item.key === active;
             return (
               <Link key={item.key} href={item.href} className={tab(isAct)} scroll>
                 <NavIcon name={item.icon} active={isAct} />

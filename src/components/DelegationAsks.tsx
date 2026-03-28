@@ -64,6 +64,7 @@ export function DelegationAsks({
 
   async function createRequest(e: React.FormEvent) {
     e.preventDefault();
+    if (!canSendAsk) return;
     const t = label.trim();
     if (t.length < 1) return;
     setCreateBusy(true);
@@ -166,32 +167,37 @@ export function DelegationAsks({
           <strong className="text-on-surface">{partnerVpThisWeek.toFixed(1)}</strong>
         </p>
 
-        {canSendAsk ? (
-          <div className="mt-4 rounded-2xl border border-secondary/35 bg-gradient-to-br from-secondary-fixed/20 to-primary/10 p-4 shadow-sm">
-            <p className="text-sm font-bold text-on-surface">
-              {partnerName} owes the balance — you can assign a task
-            </p>
-            <p className="mt-1 text-xs text-on-surface-variant">
-              They’ll have 24 hours to mark it done with a picture.
-            </p>
-            <button
-              type="button"
-              className="mt-3 w-full rounded-full bg-secondary py-3.5 text-sm font-bold text-on-secondary-container shadow-sm active:scale-[0.99]"
-              onClick={() =>
-                document.getElementById("partner-ask-form")?.scrollIntoView({ behavior: "smooth", block: "start" })
-              }
-            >
-              Request task from {partnerName}
-            </button>
-          </div>
-        ) : null}
-
-        {canSendAsk ? (
-          <form
-            id="partner-ask-form"
-            onSubmit={createRequest}
-            className="mt-4 space-y-3 rounded-xl border border-outline-variant/15 bg-surface-container-low p-4"
+        <div className="mt-4 rounded-2xl border border-secondary/35 bg-gradient-to-br from-secondary-fixed/20 to-primary/10 p-4 shadow-sm">
+          <p className="text-sm font-bold text-on-surface">
+            {canSendAsk
+              ? `${partnerName} owes the balance — assign a task below`
+              : `Request a task from ${partnerName}`}
+          </p>
+          <p className="mt-1 text-xs text-on-surface-variant">
+            {canSendAsk
+              ? "They’ll have 24 hours to submit photo proof."
+              : `You need more VP than ${partnerName} this week (no ties) to send an ask. Your VP: ${myVpThisWeek.toFixed(1)} · theirs: ${partnerVpThisWeek.toFixed(1)}.`}
+          </p>
+          <button
+            type="button"
+            className={`mt-3 w-full rounded-full py-3.5 text-sm font-bold shadow-sm active:scale-[0.99] ${
+              canSendAsk
+                ? "bg-secondary text-on-secondary-container"
+                : "border-2 border-secondary/50 bg-surface-container-lowest/80 text-on-surface"
+            }`}
+            onClick={() =>
+              document.getElementById("partner-ask-form")?.scrollIntoView({ behavior: "smooth", block: "center" })
+            }
           >
+            Request task from {partnerName}
+          </button>
+        </div>
+
+        <form
+          id="partner-ask-form"
+          onSubmit={createRequest}
+          className="mt-4 space-y-3 rounded-xl border border-outline-variant/15 bg-surface-container-low p-4"
+        >
             <p className="text-sm font-semibold text-on-surface">Ask {partnerName} to do</p>
             <input
               type="text"
@@ -220,20 +226,16 @@ export function DelegationAsks({
             </p>
             <button
               type="submit"
-              disabled={createBusy || label.trim().length < 1}
+              disabled={createBusy || !canSendAsk || label.trim().length < 1}
               className="w-full rounded-full bg-secondary py-3 text-sm font-bold text-on-secondary-container disabled:opacity-50"
             >
               {createBusy
                 ? "Sending…"
-                : `Send ask (${choreVp[effort]} VP · ${choreVp[effort] * 2} VP penalty after 24h)`}
+                : !canSendAsk
+                  ? "Earn more VP than partner to send"
+                  : `Send ask (${choreVp[effort]} VP · ${choreVp[effort] * 2} VP penalty after 24h)`}
             </button>
           </form>
-        ) : (
-          <p className="mt-4 rounded-xl bg-surface-container-high/50 px-4 py-3 text-sm text-on-surface-variant">
-            You can only send an ask when you have <strong>more VP than {partnerName}</strong> this week (ties
-            don&apos;t count). When you pull ahead, a <strong>Request task</strong> button will show here.
-          </p>
-        )}
 
         {incoming.length > 0 ? (
           <div className="mt-6 space-y-3">

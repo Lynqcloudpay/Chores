@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { AppHeader } from "@/components/AppHeader";
 import { MobileShell } from "@/components/MobileShell";
+import { ChoreVpSettings } from "@/components/ChoreVpSettings";
 import { ResetHouseholdSection } from "@/components/ResetHouseholdSection";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { sessionOrRecover } from "@/lib/supabase/session";
@@ -12,6 +13,7 @@ import type { Household, Profile } from "@/types/db";
 export default function AccountPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [partner, setPartner] = useState<Profile | null>(null);
   const [household, setHousehold] = useState<Household | null>(null);
   const [loading, setLoading] = useState(true);
   const [pw1, setPw1] = useState("");
@@ -26,12 +28,20 @@ export default function AccountPage() {
     const { data: prof } = await supabase.from("profiles").select("*").eq("id", uid).maybeSingle();
     if (!prof) {
       setProfile(null);
+      setPartner(null);
       setHousehold(null);
       return;
     }
     setProfile(prof as Profile);
-    const { data: hh } = await supabase.from("households").select("*").eq("id", (prof as Profile).household_id).single();
-    setHousehold(hh ? (hh as Household) : null);
+    const hid = (prof as Profile).household_id;
+    const [hhRes, othersRes] = await Promise.all([
+      supabase.from("households").select("*").eq("id", hid).single(),
+      supabase.from("profiles").select("*").eq("household_id", hid).neq("id", uid),
+    ]);
+    if (hhRes.error) setHousehold(null);
+    else setHousehold(hhRes.data as Household);
+    if (othersRes.error) setPartner(null);
+    else setPartner((othersRes.data?.[0] as Profile | undefined) ?? null);
   }, []);
 
   useEffect(() => {
@@ -57,6 +67,7 @@ export default function AccountPage() {
       } else {
         setEmail(null);
         setProfile(null);
+        setPartner(null);
         setHousehold(null);
         setLoading(false);
       }
@@ -138,7 +149,9 @@ export default function AccountPage() {
             ← Back to home
           </Link>
           <h1 className="mt-3 font-headline text-2xl font-bold text-on-surface">Account</h1>
-          <p className="mt-1 text-sm text-on-surface-variant">Security, household invite, and data controls.</p>
+          <p className="mt-1 text-sm text-on-surface-variant">
+            Security, chore VP defaults, invite, and data controls.
+          </p>
         </div>
 
         {loading ? (
@@ -185,6 +198,17 @@ export default function AccountPage() {
                 </button>
               </form>
             </section>
+
+            {household && profile ? (
+              <ChoreVpSettings
+                household={household}
+                profile={profile}
+                partner={partner}
+                onRefresh={async () => {
+                  await load(userId);
+                }}
+              />
+            ) : null}
 
             {household ? (
               <section className="rounded-2xl border border-outline-variant/20 bg-surface-container-low/50 p-5">
