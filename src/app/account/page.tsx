@@ -1,16 +1,19 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { AppHeader } from "@/components/AppHeader";
 import { MobileShell } from "@/components/MobileShell";
 import { ChoreVpSettings } from "@/components/ChoreVpSettings";
+import { JoinHouseholdWithCodeForm } from "@/components/JoinHouseholdWithCodeForm";
 import { ResetHouseholdSection } from "@/components/ResetHouseholdSection";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { sessionOrRecover } from "@/lib/supabase/session";
 import type { Household, Profile } from "@/types/db";
 
 export default function AccountPage() {
+  const router = useRouter();
   const [userId, setUserId] = useState<string | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [partner, setPartner] = useState<Profile | null>(null);
@@ -158,6 +161,18 @@ export default function AccountPage() {
           <p className="text-on-surface-variant">Loading…</p>
         ) : (
           <>
+            {!profile ? (
+              <JoinHouseholdWithCodeForm
+                userId={userId}
+                onJoined={async () => {
+                  setLoading(true);
+                  await load(userId);
+                  setLoading(false);
+                  router.refresh();
+                }}
+              />
+            ) : null}
+
             <section className="rounded-2xl border border-outline-variant/20 bg-surface-container-low/50 p-5">
               <h2 className="font-headline text-lg font-bold text-on-surface">Sign-in &amp; password</h2>
               {email ? (
@@ -214,7 +229,8 @@ export default function AccountPage() {
               <section className="rounded-2xl border border-outline-variant/20 bg-surface-container-low/50 p-5">
                 <h2 className="font-headline text-lg font-bold text-on-surface">Invite partner</h2>
                 <p className="mt-1 text-sm text-on-surface-variant">
-                  Share this code so the other person can join your household during sign-up.
+                  Share this code so the other person can join during sign-up or from Account → Join a household if they
+                  already have an account but no home yet.
                 </p>
                 <div className="mt-3 flex flex-wrap items-center gap-2">
                   <code className="rounded-lg bg-surface-container-highest px-3 py-2 font-mono text-lg font-bold tracking-wider text-on-surface">
