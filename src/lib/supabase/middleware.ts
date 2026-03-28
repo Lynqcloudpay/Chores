@@ -2,16 +2,17 @@ import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 /**
- * Refreshes the Supabase session cookie on each request so the browser client
- * and server stay in sync (avoids missing JWT / flaky `getSession` on load).
+ * Refreshes the Supabase session cookie on each request.
+ * Note: On Edge (Vercel), do not call `request.cookies.set` — it throws and fails the middleware.
+ * @see https://github.com/supabase/supabase/issues/26400
  */
 export async function updateSession(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request });
+  let response = NextResponse.next({ request });
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !key) {
-    return supabaseResponse;
+    return response;
   }
 
   const supabase = createServerClient(url, key, {
@@ -20,16 +21,19 @@ export async function updateSession(request: NextRequest) {
         return request.cookies.getAll();
       },
       setAll(cookiesToSet: { name: string; value: string; options: CookieOptions }[]) {
-        cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-        supabaseResponse = NextResponse.next({ request });
-        cookiesToSet.forEach(({ name, value, options }) =>
-          supabaseResponse.cookies.set(name, value, options),
-        );
+        response = NextResponse.next({ request });
+        cookiesToSet.forEach(({ name, value, options }) => {
+          response.cookies.set(name, value, options);
+        });
       },
     },
   });
 
-  await supabase.auth.getUser();
+  try {
+    await supabase.auth.getUser();
+  } catch {
+    /* network / invalid key — still return response so the app loads */
+  }
 
-  return supabaseResponse;
+  return response;
 }
