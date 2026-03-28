@@ -2,13 +2,23 @@ Your hosted Supabase project must have the same tables and functions as this app
 
 The errors "Could not find ... apply_delegation_penalties", "delegation_requests", or "reset_household_equity_data" mean these SQL files were never run on the live database.
 
-OPTION A — Supabase CLI (recommended if you use it)
-  From the `web` folder, with the project linked:
-    supabase db push
+RECOMMENDED — Supabase CLI (same end result as pasting SQL by hand)
 
-OPTION B — SQL Editor (Dashboard)
-  Open: Supabase Dashboard → your project → SQL → New query.
-  Open each file below from `web/supabase/migrations/` in order, paste the full contents, Run.
+  1. Install the Supabase CLI: https://supabase.com/docs/guides/cli
+  2. Log in: supabase login
+  3. From this repo’s web folder, link your hosted project (once):
+       cd web
+       supabase link --project-ref YOUR_PROJECT_REF
+     (Project ref is in the Supabase Dashboard → Project Settings → General → Reference ID.)
+  4. Apply every migration file under web/supabase/migrations/:
+       supabase db push
+
+  That applies migrations in order and matches what the app expects. Reload the app afterward.
+
+ALTERNATIVE — SQL Editor (Dashboard)
+
+  If you don’t use the CLI: Supabase Dashboard → SQL → New query.
+  Open each file below from web/supabase/migrations/ in filename order, paste the full contents, Run.
   If something says it already exists, skip that file or continue if the rest applies.
 
   Order (by filename):
@@ -21,4 +31,4 @@ OPTION B — SQL Editor (Dashboard)
     7. 20260329140000_contribution_disputes.sql
     8. 20260329150000_leave_household.sql
 
-After that, reload the app; the 404s should stop.
+After migrations are applied, reload the app; the 404s should stop.
