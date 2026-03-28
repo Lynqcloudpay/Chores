@@ -161,7 +161,7 @@ export function ActivityLogPage() {
             currentUserId={userId}
             onChangeEffort={(r) => setEffortRevisionRow(r)}
             onRefresh={() => void loadContributions(household.id)}
-            initialExpanded
+            variant="fullPage"
           />
         )}
       </main>

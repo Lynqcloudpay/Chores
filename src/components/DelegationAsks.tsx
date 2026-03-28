@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ProofCaptureModal, type ProofCaptureResult } from "@/components/ProofCaptureModal";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -26,7 +27,8 @@ type Props = {
   householdId: string;
   weekKey: string;
   userId: string;
-  partner: { id: string; display_name: string };
+  /** Second person in the home; when null, show invite CTA instead of the ask flow. */
+  partner: { id: string; display_name: string } | null;
   delegations: DelegationRequestRow[];
   canSendAsk: boolean;
   myVpThisWeek: number;
@@ -60,7 +62,27 @@ export function DelegationAsks({
     return () => clearInterval(id);
   }, []);
 
+  if (!partner) {
+    return (
+      <section className="rounded-2xl border border-secondary/25 bg-secondary-fixed/5 p-5">
+        <h2 className="font-headline text-lg font-bold text-on-surface">Partner asks</h2>
+        <p className="mt-2 text-sm leading-relaxed text-on-surface-variant">
+          Partner asks need a <strong className="text-on-surface">second person</strong> in your household. Share your
+          invite code from Account so they can join — then you can assign tasks with photo proof and the 24h deadline.
+        </p>
+        <Link
+          href="/account#invite-partner"
+          className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full bg-secondary py-3.5 text-sm font-bold text-on-secondary-container shadow-md ring-2 ring-secondary/30"
+        >
+          <span className="material-symbols-outlined text-[20px]">person_add</span>
+          Account — invite partner
+        </Link>
+      </section>
+    );
+  }
+
   const partnerName = partner.display_name;
+  const partnerId = partner.id;
 
   async function createRequest(e: React.FormEvent) {
     e.preventDefault();
@@ -70,7 +92,7 @@ export function DelegationAsks({
     setCreateBusy(true);
     const supabase = getSupabaseBrowserClient();
     const { error } = await supabase.rpc("create_delegation_request", {
-      p_assigned_to: partner.id,
+      p_assigned_to: partnerId,
       p_effort: effort,
       p_chore_label: t,
       p_week_start: weekKey,
@@ -167,7 +189,7 @@ export function DelegationAsks({
           <strong className="text-on-surface">{partnerVpThisWeek.toFixed(1)}</strong>
         </p>
 
-        <div className="mt-4 rounded-2xl border border-secondary/35 bg-gradient-to-br from-secondary-fixed/20 to-primary/10 p-4 shadow-sm">
+        <div className="sticky top-14 z-20 mt-4 rounded-2xl border-2 border-secondary/40 bg-gradient-to-br from-secondary-fixed/25 to-primary/15 p-4 shadow-md ring-1 ring-secondary/20 backdrop-blur-sm dark:from-secondary-fixed/15">
           <p className="text-sm font-bold text-on-surface">
             {canSendAsk
               ? `${partnerName} owes the balance — assign a task below`
@@ -180,10 +202,10 @@ export function DelegationAsks({
           </p>
           <button
             type="button"
-            className={`mt-3 w-full rounded-full py-3.5 text-sm font-bold shadow-sm active:scale-[0.99] ${
+            className={`mt-3 w-full rounded-full py-4 text-base font-extrabold shadow-md active:scale-[0.99] ${
               canSendAsk
-                ? "bg-secondary text-on-secondary-container"
-                : "border-2 border-secondary/50 bg-surface-container-lowest/80 text-on-surface"
+                ? "bg-secondary text-on-secondary-container ring-2 ring-secondary/50"
+                : "border-2 border-secondary/60 bg-surface-container-lowest text-on-surface ring-1 ring-outline-variant/30"
             }`}
             onClick={() =>
               document.getElementById("partner-ask-form")?.scrollIntoView({ behavior: "smooth", block: "center" })

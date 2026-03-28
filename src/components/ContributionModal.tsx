@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { CHORE_VP, mergedChorePresets, vpFromDollars, type Effort } from "@/lib/vp";
 import { ProofCaptureModal, type ProofCaptureResult } from "@/components/ProofCaptureModal";
+import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 const EMPTY_EXTRAS: Record<Effort, string[]> = { low: [], medium: [], high: [] };
 
@@ -26,9 +28,22 @@ type Props = {
   householdExtraPresets?: Record<Effort, string[]>;
   /** After onboarding, hide global defaults and use only household rows (+ extras). */
   includeGlobalPresets?: boolean;
+  /** Partner-ask flow (only when a second person is in the home). */
+  partnerAsk?:
+    | {
+        partnerId: string;
+        partnerName: string;
+        weekKey: string;
+        canSendAsk: boolean;
+        myVpThisWeek: number;
+        partnerVpThisWeek: number;
+      }
+    | null;
+  /** Called after a partner ask is created successfully (e.g. refresh dashboard). */
+  onPartnerAskSent?: () => void;
 };
 
-type Step = "choice" | "financial" | "chore";
+type Step = "choice" | "financial" | "chore" | "request";
 
 const effortOrder: Effort[] = ["low", "medium", "high"];
 
@@ -41,6 +56,8 @@ export function ContributionModal({
   partnerName,
   householdExtraPresets,
   includeGlobalPresets = true,
+  partnerAsk = null,
+  onPartnerAskSent,
 }: Props) {
   const [step, setStep] = useState<Step>("choice");
   const [dollars, setDollars] = useState("");
@@ -52,6 +69,10 @@ export function ContributionModal({
   const [proofResult, setProofResult] = useState<ProofCaptureResult | null>(null);
   const [proofModalOpen, setProofModalOpen] = useState(false);
   const [proofModalMode, setProofModalMode] = useState<"chore" | "financial">("chore");
+  const [requestLabel, setRequestLabel] = useState("");
+  const [requestEffort, setRequestEffort] = useState<Effort>("medium");
+  const [requestBusy, setRequestBusy] = useState(false);
+  const [requestErr, setRequestErr] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) {
@@ -64,6 +85,10 @@ export function ContributionModal({
       setCustomNote("");
       setProofResult(null);
       setProofModalOpen(false);
+      setRequestLabel("");
+      setRequestEffort("medium");
+      setRequestBusy(false);
+      setRequestErr(null);
     }
   }, [open]);
 
@@ -125,6 +150,30 @@ export function ContributionModal({
     }
   }
 
+  async function submitPartnerRequest(e: React.FormEvent) {
+    e.preventDefault();
+    if (!partnerAsk?.canSendAsk) return;
+    const t = requestLabel.trim();
+    if (t.length < 1) return;
+    setRequestBusy(true);
+    setRequestErr(null);
+    const supabase = getSupabaseBrowserClient();
+    const { error } = await supabase.rpc("create_delegation_request", {
+      p_assigned_to: partnerAsk.partnerId,
+      p_effort: requestEffort,
+      p_chore_label: t,
+      p_week_start: partnerAsk.weekKey,
+    });
+    setRequestBusy(false);
+    if (error) {
+      setRequestErr(error.message);
+      return;
+    }
+    setRequestLabel("");
+    onPartnerAskSent?.();
+    onClose();
+  }
+
   function proofSummary() {
     if (!proofResult) return null;
     if (proofResult.contentType === "application/pdf") return "PDF attached";
@@ -151,6 +200,7 @@ export function ContributionModal({
             {step === "choice" && "New contribution"}
             {step === "financial" && "Financial provision"}
             {step === "chore" && "Chore"}
+            {step === "request" && "Request a task"}
           </h2>
           <button
             type="button"
@@ -166,10 +216,12 @@ export function ContributionModal({
           {step === "choice" ? (
             <div className="space-y-4">
               <p className="text-sm leading-relaxed text-on-surface-variant">
-                You&apos;ll need a <strong className="text-on-surface">photo or document</strong> for every entry: a
-                time-stamped picture for chores, and a receipt or bank statement for money. Financial and preset
-                chores still count right away — only <strong className="text-on-surface">custom</strong> chores need{" "}
-                <span className="font-semibold text-on-surface">{partnerName}</span> to confirm effort.
+                You&apos;ll need a <strong className="text-on-surface">photo or document</strong> for financial and
+                chore entries: receipt or bank statement for money, time-stamped picture for chores. Financial and preset
+                chores count right away — only <strong className="text-on-surface">custom</strong> chores need{" "}
+                <span className="font-semibold text-on-surface">{partnerName}</span> to confirm effort.{" "}
+                <strong className="text-on-surface">Request</strong> is different: you assign a task to your partner;
+                they upload proof when it&apos;s done.
               </p>
               <button
                 type="button"
@@ -199,6 +251,40 @@ export function ContributionModal({
                   </p>
                 </div>
               </button>
+              {partnerAsk ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRequestErr(null);
+                    setStep("request");
+                  }}
+                  className="flex w-full items-center gap-4 rounded-2xl border border-secondary/35 bg-secondary-fixed/10 p-5 text-left transition hover:bg-secondary-fixed/20"
+                >
+                  <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-secondary/20 text-secondary">
+                    <span className="material-symbols-outlined">assignment</span>
+                  </span>
+                  <div>
+                    <p className="font-headline font-bold text-on-surface">Request task</p>
+                    <p className="text-sm text-on-surface-variant">
+                      Ask {partnerAsk.partnerName} to do something (24h photo proof · VP rules apply)
+                    </p>
+                  </div>
+                </button>
+              ) : (
+                <div className="rounded-2xl border border-outline-variant/15 bg-surface-container-low/50 p-4">
+                  <p className="text-sm font-semibold text-on-surface">Request task</p>
+                  <p className="mt-1 text-sm text-on-surface-variant">
+                    Add a second person to your household first — then you can assign partner tasks from here.
+                  </p>
+                  <Link
+                    href="/account#invite-partner"
+                    className="mt-3 inline-flex w-full items-center justify-center rounded-full border border-secondary/40 bg-secondary/10 py-3 text-sm font-bold text-secondary"
+                    onClick={() => onClose()}
+                  >
+                    Account — invite partner
+                  </Link>
+                </div>
+              )}
             </div>
           ) : null}
 
@@ -404,6 +490,85 @@ export function ContributionModal({
                   : choreMode === "custom"
                     ? "Submit for partner approval"
                     : "Add to week"}
+              </button>
+            </form>
+          ) : null}
+
+          {step === "request" && partnerAsk ? (
+            <form onSubmit={(e) => void submitPartnerRequest(e)} className="space-y-5">
+              <button
+                type="button"
+                onClick={() => setStep("choice")}
+                className="flex items-center gap-1 text-sm font-semibold text-secondary"
+              >
+                <span className="material-symbols-outlined text-lg">arrow_back</span> Back
+              </button>
+              <p className="text-sm leading-relaxed text-on-surface-variant">
+                The partner who is <strong className="text-on-surface">ahead in VP</strong> this week (not tied) can
+                send this. {partnerAsk.partnerName} must upload <strong className="text-on-surface">photo proof</strong>{" "}
+                within <strong className="text-on-surface">24 hours</strong> or get a VP penalty.
+              </p>
+              <p className="text-xs text-on-surface-variant">
+                Your VP: <strong className="text-on-surface">{partnerAsk.myVpThisWeek.toFixed(1)}</strong> ·{" "}
+                {partnerAsk.partnerName}:{" "}
+                <strong className="text-on-surface">{partnerAsk.partnerVpThisWeek.toFixed(1)}</strong>
+              </p>
+              {!partnerAsk.canSendAsk ? (
+                <p className="rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-950 dark:bg-amber-950/30 dark:text-amber-100">
+                  You need more VP than {partnerAsk.partnerName} this week (no ties) to send a request. Log chores or
+                  provisions first, or wait until the balance shifts.
+                </p>
+              ) : null}
+
+              <div>
+                <label className="block text-sm font-semibold text-on-surface">
+                  Ask {partnerAsk.partnerName} to do
+                  <input
+                    type="text"
+                    value={requestLabel}
+                    onChange={(e) => setRequestLabel(e.target.value)}
+                    placeholder="e.g. Dishes, litter box, groceries"
+                    maxLength={200}
+                    className="mt-1.5 w-full rounded-xl border border-outline-variant/20 bg-surface-container-low px-4 py-3 text-on-surface placeholder:text-on-surface-variant/50"
+                  />
+                </label>
+              </div>
+
+              <div>
+                <p className="mb-2 text-sm font-semibold text-on-surface">Effort (VP if done on time)</p>
+                <div className="flex flex-wrap gap-2">
+                  {effortOrder.map((e) => (
+                    <button
+                      key={e}
+                      type="button"
+                      onClick={() => setRequestEffort(e)}
+                      className={`rounded-full px-3 py-1.5 text-xs font-bold capitalize ${
+                        requestEffort === e ? "bg-secondary text-on-secondary-container" : "bg-surface-container-high text-on-surface"
+                      }`}
+                    >
+                      {e} ({choreVp[e]} VP)
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-2 text-xs text-on-surface-variant">
+                  If not done with proof in 24h: −{choreVp[requestEffort] * 2} VP for {partnerAsk.partnerName}.
+                </p>
+              </div>
+
+              {requestErr ? <p className="text-sm font-medium text-red-700 dark:text-red-300">{requestErr}</p> : null}
+
+              <button
+                type="submit"
+                disabled={
+                  requestBusy || !partnerAsk.canSendAsk || requestLabel.trim().length < 1
+                }
+                className="w-full rounded-full bg-secondary py-4 text-sm font-extrabold text-on-secondary-container shadow-md disabled:opacity-50"
+              >
+                {requestBusy
+                  ? "Sending…"
+                  : !partnerAsk.canSendAsk
+                    ? "Earn more VP than partner to send"
+                    : `Send ask (${choreVp[requestEffort]} VP · ${choreVp[requestEffort] * 2} VP penalty after 24h)`}
               </button>
             </form>
           ) : null}

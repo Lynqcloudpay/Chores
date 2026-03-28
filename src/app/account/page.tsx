@@ -7,6 +7,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { MobileShell } from "@/components/MobileShell";
 import { ChoreVpSettings } from "@/components/ChoreVpSettings";
 import { JoinHouseholdWithCodeForm } from "@/components/JoinHouseholdWithCodeForm";
+import { LeaveHouseholdSection } from "@/components/LeaveHouseholdSection";
 import { ResetHouseholdSection } from "@/components/ResetHouseholdSection";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { sessionOrRecover } from "@/lib/supabase/session";
@@ -162,16 +163,36 @@ export default function AccountPage() {
         ) : (
           <>
             {!profile ? (
-              <JoinHouseholdWithCodeForm
-                userId={userId}
-                onJoined={async () => {
-                  setLoading(true);
-                  await load(userId);
-                  setLoading(false);
-                  router.refresh();
-                }}
-              />
-            ) : null}
+              <div id="join-household">
+                <JoinHouseholdWithCodeForm
+                  userId={userId}
+                  onJoined={async () => {
+                    setLoading(true);
+                    await load(userId);
+                    setLoading(false);
+                    router.refresh();
+                  }}
+                />
+              </div>
+            ) : (
+              <section
+                id="join-household"
+                className="rounded-2xl border border-outline-variant/20 bg-surface-container-low/50 p-5"
+              >
+                <h2 className="font-headline text-lg font-bold text-on-surface">Join a different household</h2>
+                <p className="mt-1 text-sm text-on-surface-variant">
+                  Leave your current home below, then enter a new invite code here. Your VP history in the old home is
+                  removed for your account.
+                </p>
+                <p className="mt-3 text-xs text-on-surface-variant">
+                  Or ask your partner to share the invite code from{" "}
+                  <a href="#invite-partner" className="font-semibold text-primary underline">
+                    Invite partner
+                  </a>{" "}
+                  if you meant to stay in this home.
+                </p>
+              </section>
+            )}
 
             <section className="rounded-2xl border border-outline-variant/20 bg-surface-container-low/50 p-5">
               <h2 className="font-headline text-lg font-bold text-on-surface">Sign-in &amp; password</h2>
@@ -226,7 +247,7 @@ export default function AccountPage() {
             ) : null}
 
             {household ? (
-              <section className="rounded-2xl border border-outline-variant/20 bg-surface-container-low/50 p-5">
+              <section id="invite-partner" className="scroll-mt-24 rounded-2xl border border-outline-variant/20 bg-surface-container-low/50 p-5">
                 <h2 className="font-headline text-lg font-bold text-on-surface">Invite partner</h2>
                 <p className="mt-1 text-sm text-on-surface-variant">
                   Share this code so the other person can join during sign-up or from Account → Join a household if they
@@ -246,6 +267,19 @@ export default function AccountPage() {
                   {copyMsg ? <span className="text-xs text-on-surface-variant">{copyMsg}</span> : null}
                 </div>
               </section>
+            ) : null}
+
+            {household && profile ? (
+              <div id="leave-household" className="scroll-mt-24">
+                <LeaveHouseholdSection
+                  onLeft={async () => {
+                    setLoading(true);
+                    await load(userId);
+                    setLoading(false);
+                    router.refresh();
+                  }}
+                />
+              </div>
             ) : null}
 
             {household ? (

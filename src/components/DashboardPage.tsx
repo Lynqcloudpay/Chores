@@ -585,7 +585,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=…`}
               householdExtraPresets={householdExtraPresets}
               includeGlobalPresets={!household.chore_presets_onboarded_at}
             />
-            {partner && profile && userId ? (
+            {profile && userId ? (
               <DelegationAsks
                 choreVp={choreVpTiers}
                 householdId={household.id}
@@ -639,6 +639,19 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=…`}
         partnerName={partner?.display_name ?? "your partner"}
         householdExtraPresets={householdExtraPresets}
         includeGlobalPresets={!household.chore_presets_onboarded_at}
+        partnerAsk={
+          partner
+            ? {
+                partnerId: partner.id,
+                partnerName: partner.display_name,
+                weekKey,
+                canSendAsk: canSendDelegationAsk,
+                myVpThisWeek,
+                partnerVpThisWeek,
+              }
+            : null
+        }
+        onPartnerAskSent={() => void refreshWeekData(household.id)}
       />
       <EffortRevisionModal
         choreVp={choreVpTiers}

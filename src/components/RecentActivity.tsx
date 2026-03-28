@@ -17,6 +17,8 @@ type Props = {
   onRefresh: () => void;
   /** When false, the log list starts collapsed (e.g. home dashboard if we show a preview). */
   initialExpanded?: boolean;
+  /** `fullPage` = dedicated /logs view: no collapsible panel, no inner scroll region. */
+  variant?: "panel" | "fullPage";
 };
 
 function labelForRow(r: ContributionRow): string {
@@ -51,6 +53,7 @@ export function RecentActivity({
   onChangeEffort,
   onRefresh,
   initialExpanded = true,
+  variant = "panel",
 }: Props) {
   const [cancelBusyId, setCancelBusyId] = useState<string | null>(null);
   const [logExpanded, setLogExpanded] = useState(initialExpanded);
@@ -86,41 +89,9 @@ export function RecentActivity({
     [rows],
   );
   const moreThanPreview = sortedRows.length > 5;
+  const isFullPage = variant === "fullPage";
 
-  return (
-    <section id="activity-log" className="scroll-mt-24">
-      <details
-        open={logExpanded}
-        onToggle={(e) => setLogExpanded(e.currentTarget.open)}
-        className="group rounded-2xl border border-outline-variant/15 bg-surface-container-low/30 open:bg-surface-container-low/50"
-      >
-        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-2xl px-4 py-4 marker:content-none [&::-webkit-details-marker]:hidden">
-          <div className="min-w-0 text-left">
-            <h2 className="font-headline text-2xl font-bold text-on-background">Recent activity</h2>
-            <p className="mt-0.5 text-sm text-on-surface-variant">
-              {sortedRows.length} {sortedRows.length === 1 ? "entry" : "entries"} this week · newest first
-              {moreThanPreview ? (
-                <>
-                  {" "}
-                  · about five entries show at once — scroll the list below for older ones
-                </>
-              ) : null}
-              <span className="sr-only"> Collapse or expand this section with the control on the right.</span>
-            </p>
-          </div>
-          <span
-            className="material-symbols-outlined shrink-0 text-on-surface-variant transition-transform duration-200 group-open:rotate-180"
-            aria-hidden
-          >
-            expand_more
-          </span>
-        </summary>
-        <div
-          className={`space-y-3 overscroll-contain border-t border-outline-variant/10 px-4 pb-4 pt-3 ${
-            moreThanPreview ? "max-h-[min(26rem,55vh)] overflow-y-auto" : ""
-          }`}
-        >
-          {sortedRows.map((r) => {
+  const rowNodes = sortedRows.map((r) => {
             const mine = r.profile_id === currentUserId;
             const canRequestEffort =
               partner &&
@@ -244,18 +215,71 @@ export function RecentActivity({
                 </div>
               </div>
             );
-          })}
+          });
+
+  const disputeModalEl = (
+    <DisputeModal
+      row={disputeModal?.row ?? null}
+      open={disputeModal !== null}
+      phase={disputeModal?.phase ?? null}
+      onClose={() => setDisputeModal(null)}
+      partnerName={partner?.display_name ?? "Partner"}
+      onResolved={() => onRefresh()}
+    />
+  );
+
+  if (isFullPage) {
+    return (
+      <section id="activity-log" className="scroll-mt-24 space-y-4">
+        <div>
+          <h2 className="font-headline text-2xl font-bold text-on-background">Recent activity</h2>
+          <p className="mt-0.5 text-sm text-on-surface-variant">
+            {sortedRows.length} {sortedRows.length === 1 ? "entry" : "entries"} this week · newest first
+          </p>
+        </div>
+        <div className="space-y-3">{rowNodes}</div>
+        {disputeModalEl}
+      </section>
+    );
+  }
+
+  return (
+    <section id="activity-log" className="scroll-mt-24">
+      <details
+        open={logExpanded}
+        onToggle={(e) => setLogExpanded(e.currentTarget.open)}
+        className="group rounded-2xl border border-outline-variant/15 bg-surface-container-low/30 open:bg-surface-container-low/50"
+      >
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-2xl px-4 py-4 marker:content-none [&::-webkit-details-marker]:hidden">
+          <div className="min-w-0 text-left">
+            <h2 className="font-headline text-2xl font-bold text-on-background">Recent activity</h2>
+            <p className="mt-0.5 text-sm text-on-surface-variant">
+              {sortedRows.length} {sortedRows.length === 1 ? "entry" : "entries"} this week · newest first
+              {moreThanPreview ? (
+                <>
+                  {" "}
+                  · about five entries show at once — scroll the list below for older ones
+                </>
+              ) : null}
+              <span className="sr-only"> Collapse or expand this section with the control on the right.</span>
+            </p>
+          </div>
+          <span
+            className="material-symbols-outlined shrink-0 text-on-surface-variant transition-transform duration-200 group-open:rotate-180"
+            aria-hidden
+          >
+            expand_more
+          </span>
+        </summary>
+        <div
+          className={`space-y-3 overscroll-contain border-t border-outline-variant/10 px-4 pb-4 pt-3 ${
+            moreThanPreview ? "max-h-[min(26rem,55vh)] overflow-y-auto" : ""
+          }`}
+        >
+          {rowNodes}
         </div>
       </details>
-
-      <DisputeModal
-        row={disputeModal?.row ?? null}
-        open={disputeModal !== null}
-        phase={disputeModal?.phase ?? null}
-        onClose={() => setDisputeModal(null)}
-        partnerName={partner?.display_name ?? "Partner"}
-        onResolved={() => onRefresh()}
-      />
+      {disputeModalEl}
     </section>
   );
 }
