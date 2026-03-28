@@ -1,13 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ProofCaptureModal, type ProofCaptureResult } from "@/components/ProofCaptureModal";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { partnerAskDeadlinePassed, partnerAskTimeRemainingMs } from "@/lib/partner-ask-deadline";
 import { uploadContributionProof } from "@/lib/upload-proof";
 import type { DelegationRequestRow } from "@/types/db";
 import { type Effort } from "@/lib/vp";
 
 const EFFORTS: Effort[] = ["low", "medium", "high"];
+
+function formatTimeRemaining(ms: number): string {
+  if (ms <= 0) return "Time’s up";
+  const totalSec = Math.floor(ms / 1000);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  if (h > 0) return `${h}h ${m}m to submit proof`;
+  if (m > 0) return `${m} min to submit proof`;
+  return "Under a minute";
+}
 
 type Props = {
   /** Effective VP per tier (household may override defaults). */
@@ -42,6 +53,12 @@ export function DelegationAsks({
   const [completeFor, setCompleteFor] = useState<DelegationRequestRow | null>(null);
   const [proofOpen, setProofOpen] = useState(false);
   const [completeBusy, setCompleteBusy] = useState(false);
+  /** Re-render countdown ~every 30s */
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const id = window.setInterval(() => setTick((t) => t + 1), 30000);
+    return () => clearInterval(id);
+  }, []);
 
   const partnerName = partner.display_name;
 
@@ -80,6 +97,10 @@ export function DelegationAsks({
 
   async function onProofConfirmed(proof: ProofCaptureResult) {
     if (!completeFor) return;
+    if (partnerAskDeadlinePassed(completeFor.created_at)) {
+      alert("This partner ask expired — you had 24 hours to submit photo proof.");
+      return;
+    }
     setCompleteBusy(true);
     const supabase = getSupabaseBrowserClient();
     const contributionId = crypto.randomUUID();
@@ -111,7 +132,10 @@ export function DelegationAsks({
         p_request: completeFor.id,
         p_contribution: contributionId,
       });
-      if (finErr) throw finErr;
+      if (finErr) {
+        await supabase.from("contributions").delete().eq("id", contributionId);
+        throw finErr;
+      }
 
       setProofOpen(false);
       setCompleteFor(null);
@@ -132,9 +156,10 @@ export function DelegationAsks({
       <section className="rounded-2xl border border-secondary/25 bg-secondary-fixed/5 p-5">
         <h2 className="font-headline text-lg font-bold text-on-surface">Partner asks</h2>
         <p className="mt-2 text-sm leading-relaxed text-on-surface-variant">
-          The partner who is <strong className="text-on-surface">ahead in VP this week</strong> can ask the other to
-          do a specific chore. If it isn&apos;t done before the week turns over, the assignee is penalized{" "}
-          <strong className="text-on-surface">2×</strong> that chore&apos;s value (lost VP).
+          The partner who is <strong className="text-on-surface">ahead in VP this week</strong> (not tied) can request a
+          chore from the partner who <strong className="text-on-surface">owes</strong> (less VP). The assignee must
+          upload <strong className="text-on-surface">photo proof</strong> within <strong className="text-on-surface">24 hours</strong>{" "}
+          or get a <strong className="text-on-surface">2×</strong> VP penalty.
         </p>
         <p className="mt-2 text-xs text-on-surface-variant">
           Your VP: <strong className="text-on-surface">{myVpThisWeek.toFixed(1)}</strong> · {partnerName}:{" "}
@@ -142,7 +167,31 @@ export function DelegationAsks({
         </p>
 
         {canSendAsk ? (
-          <form onSubmit={createRequest} className="mt-4 space-y-3 rounded-xl border border-outline-variant/15 bg-surface-container-low p-4">
+          <div className="mt-4 rounded-2xl border border-secondary/35 bg-gradient-to-br from-secondary-fixed/20 to-primary/10 p-4 shadow-sm">
+            <p className="text-sm font-bold text-on-surface">
+              {partnerName} owes the balance — you can assign a task
+            </p>
+            <p className="mt-1 text-xs text-on-surface-variant">
+              They’ll have 24 hours to mark it done with a picture.
+            </p>
+            <button
+              type="button"
+              className="mt-3 w-full rounded-full bg-secondary py-3.5 text-sm font-bold text-on-secondary-container shadow-sm active:scale-[0.99]"
+              onClick={() =>
+                document.getElementById("partner-ask-form")?.scrollIntoView({ behavior: "smooth", block: "start" })
+              }
+            >
+              Request task from {partnerName}
+            </button>
+          </div>
+        ) : null}
+
+        {canSendAsk ? (
+          <form
+            id="partner-ask-form"
+            onSubmit={createRequest}
+            className="mt-4 space-y-3 rounded-xl border border-outline-variant/15 bg-surface-container-low p-4"
+          >
             <p className="text-sm font-semibold text-on-surface">Ask {partnerName} to do</p>
             <input
               type="text"
@@ -167,7 +216,7 @@ export function DelegationAsks({
               ))}
             </div>
             <p className="text-xs text-on-surface-variant">
-              If missed after this week: −{choreVp[effort] * 2} VP for {partnerName}.
+              If not done with proof in 24h: −{choreVp[effort] * 2} VP for {partnerName}.
             </p>
             <button
               type="submit"
@@ -176,41 +225,50 @@ export function DelegationAsks({
             >
               {createBusy
                 ? "Sending…"
-                : `Send ask (${choreVp[effort]} VP chore · ${choreVp[effort] * 2} VP penalty if missed)`}
+                : `Send ask (${choreVp[effort]} VP · ${choreVp[effort] * 2} VP penalty after 24h)`}
             </button>
           </form>
         ) : (
           <p className="mt-4 rounded-xl bg-surface-container-high/50 px-4 py-3 text-sm text-on-surface-variant">
             You can only send an ask when you have <strong>more VP than {partnerName}</strong> this week (ties
-            don&apos;t count).
+            don&apos;t count). When you pull ahead, a <strong>Request task</strong> button will show here.
           </p>
         )}
 
         {incoming.length > 0 ? (
           <div className="mt-6 space-y-3">
             <p className="text-xs font-bold uppercase tracking-wider text-secondary">Asked of you</p>
-            {incoming.map((d) => (
-              <div
-                key={d.id}
-                className="rounded-xl border border-primary/30 bg-primary-container/10 p-4"
-              >
-                <p className="font-semibold text-on-surface">{d.chore_label}</p>
-                <p className="mt-1 text-sm text-on-surface-variant">
-                  {d.effort} · complete for +{Number(d.base_vp)} VP · miss after this week: −{Number(d.penalty_vp)} VP
-                </p>
-                <button
-                  type="button"
-                  disabled={completeBusy}
-                  onClick={() => {
-                    setCompleteFor(d);
-                    setProofOpen(true);
-                  }}
-                  className="mt-3 w-full rounded-full bg-primary py-3 text-sm font-bold text-on-primary"
+            {incoming.map((d) => {
+              const expired = partnerAskDeadlinePassed(d.created_at);
+              const remaining = partnerAskTimeRemainingMs(d.created_at);
+              return (
+                <div
+                  key={d.id}
+                  className="rounded-xl border border-primary/30 bg-primary-container/10 p-4"
                 >
-                  Mark done (photo proof)
-                </button>
-              </div>
-            ))}
+                  <p className="font-semibold text-on-surface">{d.chore_label}</p>
+                  <p className="mt-1 text-sm text-on-surface-variant">
+                    {d.effort} · +{Number(d.base_vp)} VP when done · −{Number(d.penalty_vp)} VP if no proof in 24h
+                  </p>
+                  <p className="mt-2 text-xs font-semibold text-primary">
+                    {expired
+                      ? "Deadline passed — penalty applies when someone opens the app."
+                      : formatTimeRemaining(remaining)}
+                  </p>
+                  <button
+                    type="button"
+                    disabled={completeBusy || expired}
+                    onClick={() => {
+                      setCompleteFor(d);
+                      setProofOpen(true);
+                    }}
+                    className="mt-3 w-full rounded-full bg-primary py-3 text-sm font-bold text-on-primary disabled:opacity-45"
+                  >
+                    {expired ? "Deadline expired" : "Mark done (photo proof)"}
+                  </button>
+                </div>
+              );
+            })}
           </div>
         ) : null}
 
@@ -222,7 +280,7 @@ export function DelegationAsks({
                 <div>
                   <p className="font-semibold text-on-surface">{d.chore_label}</p>
                   <p className="text-sm text-on-surface-variant">
-                    {d.effort} · penalty if missed: −{Number(d.penalty_vp)} VP
+                    {d.effort} · −{Number(d.penalty_vp)} VP if no proof in 24h
                   </p>
                 </div>
                 <button

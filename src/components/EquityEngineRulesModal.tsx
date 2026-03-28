@@ -95,14 +95,18 @@ export function EquityEngineRulesModal({ open, onClose, nameA, nameB }: Props) {
           <section className="mt-6 space-y-2">
             <h3 className="text-sm font-bold text-on-surface">Partner asks &amp; penalties</h3>
             <p>
-              The partner with <strong className="text-on-surface">more VP this week</strong> (not tied) can send a <strong className="text-on-surface">partner ask</strong>. Missing it before the week ends can trigger a <strong className="text-on-surface">2× VP penalty</strong> — see the delegation block on the dashboard.
+              The partner with <strong className="text-on-surface">more VP this week</strong> (not tied) can{" "}
+              <strong className="text-on-surface">request a task</strong> from the partner who owes (less VP). The assignee must upload{" "}
+              <strong className="text-on-surface">photo proof</strong> within <strong className="text-on-surface">24 hours</strong> or receive a{" "}
+              <strong className="text-on-surface">2× VP penalty</strong>. Use the Partner asks block on the home screen.
             </p>
           </section>
 
           <section className="mt-6 space-y-2">
-            <h3 className="text-sm font-bold text-on-surface">Logs, History &amp; Exit</h3>
+            <h3 className="text-sm font-bold text-on-surface">Logs, History &amp; Account</h3>
             <p>
-              <strong className="text-on-surface">Logs</strong> jumps to this week&apos;s activity. <strong className="text-on-surface">History</strong> is the long-term ledger. <strong className="text-on-surface">Exit</strong> signs you out.
+              <strong className="text-on-surface">Logs</strong> jumps to this week&apos;s activity. <strong className="text-on-surface">History</strong> is the long-term ledger.{" "}
+              <strong className="text-on-surface">Account</strong> (bottom bar) is for password, invite code, starting clean, and sign out.
             </p>
           </section>
         </div>

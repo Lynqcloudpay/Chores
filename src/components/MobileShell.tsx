@@ -3,12 +3,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-type NavKey = "dashboard" | "logs" | "history";
+type NavKey = "dashboard" | "logs" | "history" | "account";
 
 type Props = {
   children: React.ReactNode;
   active: NavKey;
-  onProfile?: () => void;
   onAddContribution?: () => void;
 };
 
@@ -38,8 +37,9 @@ function scrollToActivityLog() {
   document.getElementById("activity-log")?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
-export function MobileShell({ children, active, onProfile, onAddContribution }: Props) {
+export function MobileShell({ children, active, onAddContribution }: Props) {
   const pathname = usePathname();
+  const accountOn = pathname === "/account" || active === "account";
 
   const tab = (isOn: boolean) =>
     `flex min-h-[48px] min-w-0 flex-1 flex-col items-center justify-center gap-0.5 px-1 py-1 text-[10px] font-semibold transition-colors ${
@@ -118,10 +118,10 @@ export function MobileShell({ children, active, onProfile, onAddContribution }: 
             );
           })}
 
-          <button type="button" onClick={onProfile} className={tab(false)} aria-label="Sign out">
-            <NavIcon name="logout" active={false} />
-            <span className="max-w-[64px] truncate">Exit</span>
-          </button>
+          <Link href="/account" className={tab(accountOn)} aria-label="Account">
+            <NavIcon name="manage_accounts" active={accountOn} />
+            <span className="max-w-[64px] truncate">Account</span>
+          </Link>
         </div>
       </nav>
     </div>

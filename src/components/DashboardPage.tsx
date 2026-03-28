@@ -18,7 +18,6 @@ import { MobileShell } from "@/components/MobileShell";
 import { PathToParity } from "@/components/PathToParity";
 import { PendingApprovals } from "@/components/PendingApprovals";
 import { RecentActivity } from "@/components/RecentActivity";
-import { ResetHouseholdSection } from "@/components/ResetHouseholdSection";
 import { isApproved, isPending } from "@/lib/contribution-status";
 import type { ProofCaptureResult } from "@/components/ProofCaptureModal";
 
@@ -573,7 +572,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=…`}
   }
 
   return (
-    <MobileShell active="dashboard" onProfile={() => void signOut()} onAddContribution={() => setModalOpen(true)}>
+    <MobileShell active="dashboard" onAddContribution={() => setModalOpen(true)}>
       <AppHeader displayName={profile.display_name} onHelp={() => setRulesModalOpen(true)} />
       <main className="mx-auto w-full max-w-2xl space-y-5 px-3 pb-28 pt-5 sm:space-y-6 sm:px-4 sm:pb-32 sm:pt-6">
         <EquityEngineWelcome profile={profile} partner={partner} household={household} />
@@ -632,13 +631,6 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=…`}
               currentUserId={userId ?? ""}
               onChangeEffort={(r) => setEffortRevisionRow(r)}
               onRefresh={() => void refreshWeekData(household.id)}
-            />
-            <ResetHouseholdSection
-              householdId={household.id}
-              onResetComplete={async () => {
-                await refreshWeekData(household.id);
-                await loadHouseholdRow(household.id);
-              }}
             />
             <p className="border-t border-outline-variant/10 pt-4 text-center text-[11px] leading-relaxed text-on-surface-variant">
               Use the center <span className="font-semibold text-on-surface">+</span> below to log. Weeks reset Sunday

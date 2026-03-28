@@ -35,6 +35,11 @@ export default function HistoryPage() {
     const p = prof as Profile;
     setProfile(p);
     const hid = p.household_id;
+    const { error: penErr } = await supabase.rpc("apply_delegation_penalties", {
+      p_current_week_start: currentKey,
+    });
+    if (penErr) console.warn(penErr.message);
+
     const [hhRes, othersRes, contribsRes] = await Promise.all([
       supabase.from("households").select("*").eq("id", hid).single(),
       supabase.from("profiles").select("*").eq("household_id", hid).neq("id", uid),
@@ -49,7 +54,7 @@ export default function HistoryPage() {
     if (othersRes.error) setPartner(null);
     else setPartner((othersRes.data?.[0] as Profile | undefined) ?? null);
     if (!contribsRes.error && contribsRes.data) setRows(contribsRes.data as ContributionRow[]);
-  }, []);
+  }, [currentKey]);
 
   useEffect(() => {
     if (!isSupabaseConfigured()) {
@@ -82,11 +87,6 @@ export default function HistoryPage() {
     });
     return () => subscription.unsubscribe();
   }, [load]);
-
-  async function signOut() {
-    const supabase = getSupabaseBrowserClient();
-    await supabase.auth.signOut();
-  }
 
   const weeks = useMemo(() => {
     const idToSlot = new Map<string, "a" | "b">();
@@ -139,7 +139,7 @@ export default function HistoryPage() {
   }
 
   return (
-    <MobileShell active="history" onProfile={() => void signOut()}>
+    <MobileShell active="history">
       <AppHeader displayName={profile.display_name} />
       <main className="mx-auto w-full max-w-2xl px-3 pb-40 pt-10 sm:px-4 sm:pb-44">
         <section className="mb-14">
