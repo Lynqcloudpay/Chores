@@ -103,6 +103,15 @@ export function EquityEngineRulesModal({ open, onClose, nameA, nameB }: Props) {
           </section>
 
           <section className="mt-6 space-y-2">
+            <h3 className="text-sm font-bold text-on-surface">Disputes &amp; fair play</h3>
+            <p>
+              In <strong className="text-on-surface">Recent activity</strong>, your partner can <strong className="text-on-surface">Dispute proof</strong> on a logged entry (financial or chore) if they believe the proof is fraudulent. VP for that line is{" "}
+              <strong className="text-on-surface">frozen</strong> until the partner who opened the dispute resolves it: either proof is valid (VP counts) or it was fraudulent — the entry is rejected and a{" "}
+              <strong className="text-on-surface">2× VP penalty</strong> applies against the person who logged it.
+            </p>
+          </section>
+
+          <section className="mt-6 space-y-2">
             <h3 className="text-sm font-bold text-on-surface">Logs, History &amp; Account</h3>
             <p>
               <strong className="text-on-surface">Logs</strong> jumps to this week&apos;s activity. <strong className="text-on-surface">History</strong> is the long-term ledger.{" "}

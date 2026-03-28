@@ -76,5 +76,12 @@ export type ContributionRow = {
   effort_revision_pending?: boolean;
   pending_effort?: EffortLevel | null;
   pending_vp?: number | null;
+  /** Partner dispute: VP on hold until resolved_valid; resolved_fraud rejects entry + penalty row. */
+  dispute_status?: "open" | "resolved_valid" | "resolved_fraud" | null;
+  dispute_opened_by?: string | null;
+  dispute_opened_at?: string | null;
+  dispute_note?: string | null;
+  dispute_resolved_by?: string | null;
+  dispute_resolved_at?: string | null;
   created_at: string;
 };

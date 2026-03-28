@@ -6,7 +6,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { MobileShell } from "@/components/MobileShell";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { sessionOrRecover } from "@/lib/supabase/session";
-import { isApproved } from "@/lib/contribution-status";
+import { countsTowardVp } from "@/lib/contribution-status";
 import { formatWeekLabel, getWeekStartSunday, toDateKey } from "@/lib/week";
 import type { ContributionRow, Household, Profile } from "@/types/db";
 
@@ -94,7 +94,7 @@ export default function HistoryPage() {
     if (partner) idToSlot.set(partner.id, partner.member_slot);
     const map = new Map<string, WeekAgg>();
     for (const r of rows) {
-      if (!isApproved(r)) continue;
+      if (!countsTowardVp(r)) continue;
       if (r.week_start === currentKey) continue;
       const slot = idToSlot.get(r.profile_id);
       if (!slot) continue;

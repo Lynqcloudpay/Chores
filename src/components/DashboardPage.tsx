@@ -18,7 +18,7 @@ import { MobileShell } from "@/components/MobileShell";
 import { PathToParity } from "@/components/PathToParity";
 import { PendingApprovals } from "@/components/PendingApprovals";
 import { RecentActivity } from "@/components/RecentActivity";
-import { isApproved, isPending } from "@/lib/contribution-status";
+import { countsTowardVp, isApproved, isPending } from "@/lib/contribution-status";
 import type { ProofCaptureResult } from "@/components/ProofCaptureModal";
 
 const ContributionModal = dynamic(
@@ -264,6 +264,7 @@ export function DashboardPage() {
   }, [loading, household?.id]);
 
   const approvedRows = useMemo(() => weekRows.filter(isApproved), [weekRows]);
+  const countingRows = useMemo(() => weekRows.filter(countsTowardVp), [weekRows]);
   const pendingIncoming = useMemo(
     () =>
       weekRows.filter((r) => {
@@ -298,7 +299,7 @@ export function DashboardPage() {
     const idToSlot = new Map<string, "a" | "b">();
     if (profile) idToSlot.set(profile.id, profile.member_slot);
     if (partner) idToSlot.set(partner.id, partner.member_slot);
-    for (const r of approvedRows) {
+    for (const r of countingRows) {
       const slot = idToSlot.get(r.profile_id);
       if (!slot) continue;
       if (slot === "a") a += Number(r.vp);
@@ -307,21 +308,21 @@ export function DashboardPage() {
     const gap = Math.abs(a - b);
     const behind = a < b ? labelA : b < a ? labelB : null;
     return { nameA: labelA, nameB: labelB, vpA: a, vpB: b, behindName: behind, deficit: gap };
-  }, [approvedRows, profile, partner]);
+  }, [countingRows, profile, partner]);
 
   const myVpThisWeek = useMemo(() => {
     if (!profile) return 0;
-    return approvedRows
+    return countingRows
       .filter((r) => r.profile_id === profile.id)
       .reduce((sum, r) => sum + Number(r.vp), 0);
-  }, [approvedRows, profile]);
+  }, [countingRows, profile]);
 
   const partnerVpThisWeek = useMemo(() => {
     if (!partner) return 0;
-    return approvedRows
+    return countingRows
       .filter((r) => r.profile_id === partner.id)
       .reduce((sum, r) => sum + Number(r.vp), 0);
-  }, [approvedRows, partner]);
+  }, [countingRows, partner]);
 
   const canSendDelegationAsk = Boolean(partner && myVpThisWeek > partnerVpThisWeek);
 

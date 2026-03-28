@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { DisputeModal } from "@/components/DisputeModal";
 import { ProofLinkButton } from "@/components/ProofLinkButton";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
-import { isApproved } from "@/lib/contribution-status";
+import { isApproved, isDisputeOpen } from "@/lib/contribution-status";
 import type { ContributionRow, Profile } from "@/types/db";
 
 type Props = {
@@ -51,6 +52,7 @@ export function RecentActivity({
   const [cancelBusyId, setCancelBusyId] = useState<string | null>(null);
   /** Expanded by default; user can collapse the whole block. */
   const [logExpanded, setLogExpanded] = useState(true);
+  const [disputeModal, setDisputeModal] = useState<{ row: ContributionRow; phase: "open" | "resolve" } | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -132,6 +134,22 @@ export function RecentActivity({
               mine &&
               r.effort;
             const showCancel = mine && r.kind === "chore" && r.effort_revision_pending;
+            const isSystemOrPenaltyLine =
+              Number(r.vp) < 0 ||
+              (r.note?.startsWith("Penalty ·") ?? false) ||
+              (r.note?.startsWith("Dispute penalty") ?? false);
+            const canDisputePartnerEntry =
+              partner &&
+              !mine &&
+              isApproved(r) &&
+              !r.dispute_status &&
+              !r.effort_revision_pending &&
+              !isSystemOrPenaltyLine;
+            const canResolveDispute =
+              partner &&
+              !mine &&
+              isDisputeOpen(r) &&
+              r.dispute_opened_by === currentUserId;
 
             return (
               <div
@@ -155,8 +173,32 @@ export function RecentActivity({
                         {Number(r.pending_vp)} VP)
                       </p>
                     ) : null}
+                    {mine && isDisputeOpen(r) ? (
+                      <p className="mt-2 text-xs font-semibold text-amber-900 dark:text-amber-200">
+                        Partner disputed this entry — VP on hold until resolved.
+                      </p>
+                    ) : null}
                     <div className="mt-1 flex flex-wrap items-center gap-2">
                       <ProofLinkButton storagePath={r.proof_storage_path} />
+                      {canDisputePartnerEntry ? (
+                        <button
+                          type="button"
+                          onClick={() => setDisputeModal({ row: r, phase: "open" })}
+                          className="inline-flex items-center gap-1 rounded-full border border-amber-800/40 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-950 dark:border-amber-500/40 dark:bg-amber-950/40 dark:text-amber-100"
+                        >
+                          <span className="material-symbols-outlined text-[16px]">gavel</span>
+                          Dispute proof
+                        </button>
+                      ) : null}
+                      {canResolveDispute ? (
+                        <button
+                          type="button"
+                          onClick={() => setDisputeModal({ row: r, phase: "resolve" })}
+                          className="inline-flex items-center gap-1 rounded-full border border-primary/40 bg-primary/10 px-2.5 py-1 text-xs font-bold text-primary"
+                        >
+                          Resolve dispute
+                        </button>
+                      ) : null}
                       {canRequestEffort ? (
                         <button
                           type="button"
@@ -188,6 +230,18 @@ export function RecentActivity({
                         → {Number(r.pending_vp)} VP if approved
                       </span>
                     </>
+                  ) : isDisputeOpen(r) ? (
+                    <>
+                      <span className="text-sm font-extrabold text-amber-900 line-through opacity-70 dark:text-amber-100">
+                        +{Number(r.vp)} VP
+                      </span>
+                      <span className="block text-[11px] font-bold text-amber-900 dark:text-amber-200">On hold</span>
+                    </>
+                  ) : r.dispute_status === "resolved_valid" ? (
+                    <>
+                      <span className="text-sm font-extrabold text-primary">+{Number(r.vp)} VP</span>
+                      <span className="block text-[11px] text-on-surface-variant">Dispute cleared</span>
+                    </>
                   ) : (
                     <span className="text-sm font-extrabold text-primary">+{Number(r.vp)} VP</span>
                   )}
@@ -197,6 +251,15 @@ export function RecentActivity({
           })}
         </div>
       </details>
+
+      <DisputeModal
+        row={disputeModal?.row ?? null}
+        open={disputeModal !== null}
+        phase={disputeModal?.phase ?? null}
+        onClose={() => setDisputeModal(null)}
+        partnerName={partner?.display_name ?? "Partner"}
+        onResolved={() => onRefresh()}
+      />
     </section>
   );
 }
