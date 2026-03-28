@@ -98,8 +98,8 @@ export function CompleteSetupForm({ userId, onComplete }: Props) {
     <div className="mx-auto w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 text-left shadow-sm">
       <h2 className="text-lg font-semibold text-slate-900">Finish household setup</h2>
       <p className="mt-2 text-sm text-slate-600">
-        You’re signed in, but your account isn’t linked to a household yet (for example if sign-up was
-        interrupted). Create one or join with your partner’s code — you don’t need to register again.
+        You’re signed in, but not linked to a home yet. When you&apos;re ready, create a new household (you&apos;ll get
+        an invite code) or join with your partner&apos;s code — nothing is set up until you pick one of these.
       </p>
 
       <div className="mt-4 flex gap-2">

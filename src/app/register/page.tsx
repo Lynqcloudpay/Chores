@@ -6,13 +6,6 @@ import { useEffect, useState } from "react";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { sessionOrRecover } from "@/lib/supabase/session";
 
-function randomInviteCode(): string {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let s = "";
-  for (let i = 0; i < 6; i++) s += chars[Math.floor(Math.random() * chars.length)];
-  return s;
-}
-
 export default function RegisterPage() {
   const router = useRouter();
   const [gateReady, setGateReady] = useState(false);
@@ -72,9 +65,15 @@ export default function RegisterPage() {
       setErr("Password must be at least 6 characters (your project may require more).");
       return;
     }
-    if (join && code.trim().length < 4) {
-      setErr("Enter your partner’s invite code.");
-      return;
+    if (join) {
+      if (!name.trim()) {
+        setErr("Enter your display name.");
+        return;
+      }
+      if (code.trim().length < 4) {
+        setErr("Enter your partner’s invite code.");
+        return;
+      }
     }
 
     setBusy(true);
@@ -115,26 +114,7 @@ export default function RegisterPage() {
 
     try {
       if (!join) {
-        const invite = randomInviteCode();
-        const { data: hh, error: he } = await supabase
-          .from("households")
-          .insert({
-            name: "Home",
-            invite_code: invite,
-            created_by: user.id,
-          })
-          .select()
-          .single();
-        if (he) throw he;
-        const { error: pe } = await supabase.from("profiles").insert({
-          id: user.id,
-          household_id: hh.id,
-          display_name: name.trim(),
-          member_slot: "a",
-        });
-        if (pe) throw pe;
-        alert(`Share this code with your partner: ${invite}`);
-        router.replace("/setup/chores");
+        router.replace("/setup");
         router.refresh();
       } else {
         const { data: hid, error: fe } = await supabase.rpc("household_id_by_invite", {
@@ -182,7 +162,10 @@ export default function RegisterPage() {
   return (
     <div className="mx-auto max-w-md px-4 py-12">
       <h1 className="text-2xl font-bold text-slate-900">Create account</h1>
-      <p className="mt-2 text-slate-600">Start a household or join with a code.</p>
+      <p className="mt-2 text-slate-600">
+        You only register your email here. Link or create a household on the next step when you&apos;re ready — nothing
+        is created until you choose.
+      </p>
       <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-slate-800">
         <strong className="text-slate-900">Already created an account?</strong> Don’t sign up again —{" "}
         <Link href="/login" className="font-semibold text-blue-700 underline">
@@ -203,7 +186,7 @@ export default function RegisterPage() {
             !join ? "border-emerald-400 bg-emerald-50 text-emerald-900" : "border-slate-200 bg-white"
           }`}
         >
-          Start household
+          No code yet
         </button>
         <button
           type="button"
@@ -217,15 +200,17 @@ export default function RegisterPage() {
       </div>
 
       <form onSubmit={onSubmit} className="mt-6 space-y-4">
-        <div>
-          <label className="text-xs font-semibold text-slate-500">Display name</label>
-          <input
-            className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-slate-900"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-          />
-        </div>
+        {join ? (
+          <div>
+            <label className="text-xs font-semibold text-slate-500">Display name</label>
+            <input
+              className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-slate-900"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
+          </div>
+        ) : null}
         <div>
           <label className="text-xs font-semibold text-slate-500">Email</label>
           <input
@@ -264,7 +249,7 @@ export default function RegisterPage() {
           disabled={busy}
           className="w-full rounded-xl bg-slate-900 py-3 text-sm font-semibold text-white disabled:opacity-60"
         >
-          {busy ? "Working…" : join ? "Join household" : "Create household"}
+          {busy ? "Working…" : join ? "Join household" : "Create account"}
         </button>
       </form>
       <p className="mt-6 text-center text-sm">
