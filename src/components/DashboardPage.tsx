@@ -219,27 +219,38 @@ export function DashboardPage() {
       return;
     }
     const supabase = getSupabaseBrowserClient();
+    /** If auth never settles (network / callback error), don’t spin forever on “Loading…”. */
+    let safety = window.setTimeout(() => setReady(true), 8000);
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      let effective = session;
-      if (event === "INITIAL_SESSION") {
-        effective = await sessionOrRecover(supabase, session);
-      }
-      const uid = effective?.user?.id ?? null;
-      setUserId(uid);
-      if (uid) void refreshProfiles(uid);
-      else {
-        setProfile(null);
-        setHousehold(null);
-        setPartner(null);
-        setContributionRows([]);
-      }
-      if (event === "INITIAL_SESSION") {
-        setReady(true);
+      try {
+        let effective = session;
+        if (event === "INITIAL_SESSION") {
+          effective = await sessionOrRecover(supabase, session);
+        }
+        const uid = effective?.user?.id ?? null;
+        setUserId(uid);
+        if (uid) void refreshProfiles(uid);
+        else {
+          setProfile(null);
+          setHousehold(null);
+          setPartner(null);
+          setContributionRows([]);
+        }
+      } catch (e) {
+        console.warn("auth state", e);
+      } finally {
+        if (event === "INITIAL_SESSION") {
+          window.clearTimeout(safety);
+          setReady(true);
+        }
       }
     });
-    return () => subscription.unsubscribe();
+    return () => {
+      window.clearTimeout(safety);
+      subscription.unsubscribe();
+    };
   }, [refreshProfiles]);
 
   useEffect(() => {
