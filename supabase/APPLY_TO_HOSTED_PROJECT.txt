@@ -1,0 +1,47 @@
+Your hosted Supabase project must have the same tables and functions as this app.
+
+The errors "Could not find ... apply_delegation_penalties", "delegation_requests", or "reset_household_equity_data" mean these SQL files were never run on the live database.
+
+RECOMMENDED — Supabase CLI (same end result as pasting SQL by hand)
+
+  1. Install the Supabase CLI: https://supabase.com/docs/guides/cli
+  2. Log in: supabase login
+  3. From this repo’s web folder, link your hosted project (once):
+       cd web
+       supabase link --project-ref YOUR_PROJECT_REF
+     (Project ref is in the Supabase Dashboard → Project Settings → General → Reference ID.)
+  4. Apply every migration file under web/supabase/migrations/:
+       supabase db push
+
+  That applies migrations in order and matches what the app expects. Reload the app afterward.
+
+ALTERNATIVE — SQL Editor (Dashboard)
+
+  If you don’t use the CLI: Supabase Dashboard → SQL → New query.
+  Open each file below from web/supabase/migrations/ in filename order, paste the full contents, Run.
+  If something says it already exists, skip that file or continue if the rest applies.
+
+  Order (by filename):
+    1. 20260328210000_effort_revision_pending.sql
+    2. 20260328220000_delegation_requests.sql
+    3. 20260328231000_household_chore_vp.sql
+    4. 20260328240000_reset_household_equity.sql
+    5. 20260329120000_delegation_penalty_24h.sql
+    6. 20260329130000_contributions_delete_fresh.sql
+    7. 20260329140000_contribution_disputes.sql
+    8. 20260329150000_leave_household.sql
+
+After migrations are applied, reload the app; the 404s should stop.
+
+---
+
+Only seeing POST .../rpc/reset_household_equity_data → 404?
+
+  That RPC is created by migration:
+    web/supabase/migrations/20260328240000_reset_household_equity.sql
+
+  It deletes from public.delegation_requests, so migration 20260328220000_delegation_requests.sql
+  (creates that table) must already be applied. If you run only the reset file and Postgres errors
+  about delegation_requests, run migrations 1–3 first, then 4 again.
+
+  Fastest fix: from the web folder, supabase db push (after supabase link).
