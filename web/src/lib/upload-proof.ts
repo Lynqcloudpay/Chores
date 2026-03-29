@@ -6,7 +6,7 @@ export function proofObjectPath(
   householdId: string,
   contributionId: string,
   contentType: string,
-  /** Second image for chore before/after flow */
+  /** Optional suffix for a second file on the same contribution (legacy). */
   slot: "before" | "after" = "before",
 ): string {
   const ext =

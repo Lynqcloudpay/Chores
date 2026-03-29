@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ProofCaptureModal, isChoreProofPair, type ChoreProofPair } from "@/components/ProofCaptureModal";
+import { ProofCaptureModal, type ProofCaptureResult } from "@/components/ProofCaptureModal";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { partnerAskDeadlinePassed, partnerAskTimeRemainingMs } from "@/lib/partner-ask-deadline";
 import { uploadContributionProof } from "@/lib/upload-proof";
@@ -28,7 +28,7 @@ type Props = {
 };
 
 /**
- * Compact partner-ask status: tasks asked of you (with before/after proof) and your open outgoing asks.
+ * Compact partner-ask status: tasks asked of you (photo proof when done) and your open outgoing asks.
  * Creation lives in the + contribution modal — this avoids duplicating the large dashboard explainer.
  */
 export function PartnerAskStatus({ householdId, weekKey, userId, partner, delegations, onRefresh }: Props) {
@@ -73,7 +73,7 @@ export function PartnerAskStatus({ householdId, weekKey, userId, partner, delega
     await onRefresh();
   }
 
-  async function onProofConfirmed(result: ChoreProofPair) {
+  async function onProofConfirmed(result: ProofCaptureResult) {
     if (!completeFor) return;
     if (partnerAskDeadlinePassed(completeFor.created_at)) {
       alert("This partner ask expired — you had 24 hours to submit photo proof.");
@@ -83,21 +83,12 @@ export function PartnerAskStatus({ householdId, weekKey, userId, partner, delega
     const supabase = getSupabaseBrowserClient();
     const contributionId = crypto.randomUUID();
     try {
-      const { path: pathBefore } = await uploadContributionProof(
+      const { path } = await uploadContributionProof(
         supabase,
         householdId,
         contributionId,
-        result.before.blob,
-        result.before.contentType,
-        "before",
-      );
-      const { path: pathAfter } = await uploadContributionProof(
-        supabase,
-        householdId,
-        contributionId,
-        result.after.blob,
-        result.after.contentType,
-        "after",
+        result.blob,
+        result.contentType,
       );
       const { error: insErr } = await supabase.from("contributions").insert({
         id: contributionId,
@@ -110,10 +101,8 @@ export function PartnerAskStatus({ householdId, weekKey, userId, partner, delega
         week_start: weekKey,
         status: "approved",
         chore_source: "preset",
-        proof_storage_path: pathBefore,
-        proof_captured_at: result.before.capturedAtIso,
-        proof_after_storage_path: pathAfter,
-        proof_after_captured_at: result.after.capturedAtIso,
+        proof_storage_path: path,
+        proof_captured_at: result.capturedAtIso,
       });
       if (insErr) throw insErr;
 
@@ -142,8 +131,8 @@ export function PartnerAskStatus({ householdId, weekKey, userId, partner, delega
       <section className="rounded-2xl border border-secondary/20 bg-secondary-fixed/5 p-4">
         <h2 className="font-headline text-base font-bold text-on-surface">Open partner asks</h2>
         <p className="mt-1 text-xs text-on-surface-variant">
-          New requests are sent from the <span className="font-semibold text-on-surface">+</span> menu · before &amp; after
-          photos when you mark done.
+          New requests are sent from the <span className="font-semibold text-on-surface">+</span> menu · one photo when you
+          mark done.
         </p>
 
         {incoming.length > 0 ? (
@@ -170,7 +159,7 @@ export function PartnerAskStatus({ householdId, weekKey, userId, partner, delega
                     }}
                     className="mt-3 w-full rounded-full bg-primary py-3 text-sm font-bold text-on-primary disabled:opacity-45"
                   >
-                    {expired ? "Deadline expired" : "Mark done (before & after)"}
+                    {expired ? "Deadline expired" : "Mark done (photo proof)"}
                   </button>
                 </div>
               );
@@ -212,9 +201,7 @@ export function PartnerAskStatus({ householdId, weekKey, userId, partner, delega
           }
         }}
         mode="chore"
-        onConfirm={(r) => {
-          if (isChoreProofPair(r)) void onProofConfirmed(r);
-        }}
+        onConfirm={(r) => void onProofConfirmed(r)}
       />
     </>
   );

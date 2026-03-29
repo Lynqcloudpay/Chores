@@ -9,24 +9,15 @@ export type ProofCaptureResult = {
   contentType: string;
 };
 
-/** Chore entries use a before + after photo pair. */
-export type ChoreProofPair = { before: ProofCaptureResult; after: ProofCaptureResult };
-
-export function isChoreProofPair(x: ProofCaptureResult | ChoreProofPair): x is ChoreProofPair {
-  return x != null && typeof x === "object" && "before" in x && "after" in x;
-}
-
 type Props = {
   open: boolean;
   onClose: () => void;
-  /** Chore: two photos (before / after). Financial: camera or file (receipt / PDF). */
+  /** Chore: one photo when the work is done. Financial: camera or file (receipt / PDF). */
   mode: "chore" | "financial";
-  onConfirm: (result: ProofCaptureResult | ChoreProofPair) => void;
+  onConfirm: (result: ProofCaptureResult) => void;
 };
 
 type Phase = "camera" | "preview";
-
-type ChorePart = "before" | "after";
 
 export function ProofCaptureModal({ open, onClose, mode, onConfirm }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -36,8 +27,6 @@ export function ProofCaptureModal({ open, onClose, mode, onConfirm }: Props) {
   const previewObjectUrlRef = useRef<string | null>(null);
 
   const [phase, setPhase] = useState<Phase>("camera");
-  const [chorePart, setChorePart] = useState<ChorePart>("before");
-  const [beforeResult, setBeforeResult] = useState<ProofCaptureResult | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [pending, setPending] = useState<ProofCaptureResult | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
@@ -78,15 +67,11 @@ export function ProofCaptureModal({ open, onClose, mode, onConfirm }: Props) {
       }
       setPreviewUrl(null);
       setPhase("camera");
-      setChorePart("before");
-      setBeforeResult(null);
       setPending(null);
       setCameraError(null);
       return;
     }
     setPhase("camera");
-    setChorePart("before");
-    setBeforeResult(null);
     setPending(null);
     setCameraError(null);
     if (previewObjectUrlRef.current) {
@@ -210,48 +195,18 @@ export function ProofCaptureModal({ open, onClose, mode, onConfirm }: Props) {
 
   function confirm() {
     if (!pending) return;
-    if (mode === "financial") {
-      onConfirm(pending);
-      onClose();
-      return;
-    }
-    if (chorePart === "before") {
-      setBeforeResult(pending);
-      if (previewObjectUrlRef.current) {
-        URL.revokeObjectURL(previewObjectUrlRef.current);
-        previewObjectUrlRef.current = null;
-      }
-      setPreviewUrl(null);
-      setPending(null);
-      setPhase("camera");
-      setChorePart("after");
-      void startCamera();
-      return;
-    }
-    if (beforeResult) {
-      onConfirm({ before: beforeResult, after: pending });
-      onClose();
-    }
+    onConfirm(pending);
+    onClose();
   }
 
   if (!open) return null;
 
   const title =
-    mode === "financial"
-      ? "Receipt or bank proof"
-      : chorePart === "before"
-        ? "Before — starting state"
-        : "After — finished chore";
+    mode === "financial" ? "Receipt or bank proof" : "Chore proof — when you’re done";
 
-  const previewPrimaryLabel =
-    mode === "chore" ? (chorePart === "before" ? "Before preview" : "After preview") : "Proof preview";
+  const previewPrimaryLabel = mode === "chore" ? "Proof preview" : "Proof preview";
 
-  const confirmLabel =
-    mode === "financial"
-      ? "Use this proof"
-      : chorePart === "before"
-        ? "Next: after photo"
-        : "Submit both photos";
+  const confirmLabel = "Use this proof";
 
   return (
     <div className="fixed inset-0 z-[110] flex items-end justify-center bg-black/70 sm:items-center sm:p-4">
@@ -278,9 +233,8 @@ export function ProofCaptureModal({ open, onClose, mode, onConfirm }: Props) {
         <div className="flex flex-1 flex-col overflow-y-auto p-4">
           {mode === "chore" ? (
             <p className="mb-3 text-sm text-on-surface-variant">
-              {chorePart === "before"
-                ? "Take a photo of the situation before you start (area, task, or mess). Time stamp is added automatically."
-                : "Take a photo after you finished so your partner can see the result. Time stamp is added automatically."}
+              Take one photo after you finish the chore so your partner can see the result. Time stamp is added
+              automatically.
             </p>
           ) : (
             <p className="mb-3 text-sm text-on-surface-variant">

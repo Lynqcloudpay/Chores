@@ -17,7 +17,7 @@ import { MobileShell } from "@/components/MobileShell";
 import { PathToParity } from "@/components/PathToParity";
 import { PendingApprovals } from "@/components/PendingApprovals";
 import { countsTowardVp, isPending } from "@/lib/contribution-status";
-import { isChoreProofPair, type ChoreProofPair, type ProofCaptureResult } from "@/components/ProofCaptureModal";
+import type { ProofCaptureResult } from "@/components/ProofCaptureModal";
 
 const ContributionModal = dynamic(
   () => import("@/components/ContributionModal").then((m) => m.ContributionModal),
@@ -333,7 +333,7 @@ export function DashboardPage() {
     effort?: Effort;
     note?: string;
     choreEntryType?: "preset" | "custom";
-    proof: ProofCaptureResult | ChoreProofPair;
+    proof: ProofCaptureResult;
   }) {
     if (!profile || !household || !userId) return;
     const vp =
@@ -355,46 +355,16 @@ export function DashboardPage() {
       let proofAfterPath: string | null = null;
       let proofAfterCapturedAt: string | null = null;
 
-      if (payload.kind === "provision") {
-        if (isChoreProofPair(payload.proof)) {
-          alert("Financial entries need a single receipt or document.");
-          return;
-        }
-        const { path } = await uploadContributionProof(
-          supabase,
-          household.id,
-          contributionId,
-          payload.proof.blob,
-          payload.proof.contentType,
-        );
-        proofPath = path;
-        proofCapturedAt = payload.proof.capturedAtIso;
-      } else {
-        if (!isChoreProofPair(payload.proof)) {
-          alert("Chores need before and after photos.");
-          return;
-        }
-        const before = await uploadContributionProof(
-          supabase,
-          household.id,
-          contributionId,
-          payload.proof.before.blob,
-          payload.proof.before.contentType,
-          "before",
-        );
-        const after = await uploadContributionProof(
-          supabase,
-          household.id,
-          contributionId,
-          payload.proof.after.blob,
-          payload.proof.after.contentType,
-          "after",
-        );
-        proofPath = before.path;
-        proofCapturedAt = payload.proof.before.capturedAtIso;
-        proofAfterPath = after.path;
-        proofAfterCapturedAt = payload.proof.after.capturedAtIso;
-      }
+      const { path } = await uploadContributionProof(
+        supabase,
+        household.id,
+        contributionId,
+        payload.proof.blob,
+        payload.proof.contentType,
+      );
+      proofPath = path;
+      proofCapturedAt = payload.proof.capturedAtIso;
+      // Chore: single after-style proof stored as primary; legacy rows may still have proof_after_*.
 
       const { error } = await supabase.from("contributions").insert({
         id: contributionId,

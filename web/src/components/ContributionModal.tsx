@@ -3,12 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { CHORE_VP, mergedChorePresets, vpFromDollars, type Effort } from "@/lib/vp";
-import {
-  ProofCaptureModal,
-  isChoreProofPair,
-  type ChoreProofPair,
-  type ProofCaptureResult,
-} from "@/components/ProofCaptureModal";
+import { ProofCaptureModal, type ProofCaptureResult } from "@/components/ProofCaptureModal";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 const EMPTY_EXTRAS: Record<Effort, string[]> = { low: [], medium: [], high: [] };
@@ -25,7 +20,7 @@ type Props = {
     note?: string;
     /** Only custom free-text chores need partner approval (effort level confirmation). */
     choreEntryType?: "preset" | "custom";
-    proof: ProofCaptureResult | ChoreProofPair;
+    proof: ProofCaptureResult;
   }) => Promise<void>;
   busy: boolean;
   partnerName: string;
@@ -71,7 +66,7 @@ export function ContributionModal({
   const [choreMode, setChoreMode] = useState<"preset" | "custom">("preset");
   const [presetLabel, setPresetLabel] = useState<string | null>(null);
   const [customNote, setCustomNote] = useState("");
-  const [proofResult, setProofResult] = useState<ProofCaptureResult | ChoreProofPair | null>(null);
+  const [proofResult, setProofResult] = useState<ProofCaptureResult | null>(null);
   const [proofModalOpen, setProofModalOpen] = useState(false);
   const [proofModalMode, setProofModalMode] = useState<"chore" | "financial">("chore");
   const [requestLabel, setRequestLabel] = useState("");
@@ -124,7 +119,7 @@ export function ContributionModal({
 
   async function submitFinancial(e: React.FormEvent) {
     e.preventDefault();
-    if (!financialValid || !proofResult || isChoreProofPair(proofResult)) return;
+    if (!financialValid || !proofResult) return;
     try {
       await onSubmit({
         kind: "provision",
@@ -140,7 +135,7 @@ export function ContributionModal({
 
   async function submitChore(e: React.FormEvent) {
     e.preventDefault();
-    if (!choreValid || !proofResult || !isChoreProofPair(proofResult)) return;
+    if (!choreValid || !proofResult) return;
     try {
       await onSubmit({
         kind: "chore",
@@ -181,7 +176,6 @@ export function ContributionModal({
 
   function proofSummary() {
     if (!proofResult) return null;
-    if (isChoreProofPair(proofResult)) return "Before + after photos attached";
     if (proofResult.contentType === "application/pdf") return "PDF attached";
     return "Photo attached · stamped";
   }
@@ -223,7 +217,7 @@ export function ContributionModal({
             <div className="space-y-4">
               <p className="text-sm leading-relaxed text-on-surface-variant">
                 You&apos;ll need a <strong className="text-on-surface">photo or document</strong> for financial and
-                chore entries: receipt or bank statement for money, before &amp; after time-stamped photos for chores. Financial and preset
+                chore entries: receipt or bank statement for money, one time-stamped photo when the work is done. Financial and preset
                 chores count right away — only <strong className="text-on-surface">custom</strong> chores need{" "}
                 <span className="font-semibold text-on-surface">{partnerName}</span> to confirm effort.{" "}
                 <strong className="text-on-surface">Request</strong> is different: you assign a task to your partner;
@@ -467,9 +461,9 @@ export function ContributionModal({
               </p>
 
               <div className="rounded-2xl border border-outline-variant/20 bg-surface-container-low/80 p-4">
-                <p className="text-sm font-semibold text-on-surface">Before &amp; after photos (required)</p>
+                <p className="text-sm font-semibold text-on-surface">Photo proof when done (required)</p>
                 <p className="mt-1 text-xs text-on-surface-variant">
-                  First photo: starting state. Second: finished work. We stamp date and time on each capture.
+                  One photo after you finish — we stamp date and time when you capture it.
                 </p>
                 {proofResult ? (
                   <p className="mt-2 text-sm font-medium text-primary">{proofSummary()}</p>
@@ -482,13 +476,13 @@ export function ContributionModal({
                   }}
                   className="mt-3 w-full rounded-full border border-primary/40 bg-primary/5 py-3 text-sm font-bold text-primary"
                 >
-                  {proofResult ? "Retake before & after" : "Take before & after photos"}
+                  {proofResult ? "Change photo" : "Take proof photo"}
                 </button>
               </div>
 
               <button
                 type="submit"
-                disabled={busy || !choreValid || !proofResult || !isChoreProofPair(proofResult)}
+                disabled={busy || !choreValid || !proofResult}
                 className="w-full rounded-full bg-gradient-to-br from-primary to-primary-container py-4 font-headline font-bold text-on-primary shadow-lg disabled:opacity-50"
               >
                 {busy
@@ -511,8 +505,8 @@ export function ContributionModal({
               </button>
               <p className="text-sm leading-relaxed text-on-surface-variant">
                 The partner who is <strong className="text-on-surface">ahead in VP</strong> this week (not tied) can
-                send this. {partnerAsk.partnerName} must upload <strong className="text-on-surface">before &amp; after</strong>{" "}
-                photo proof within <strong className="text-on-surface">24 hours</strong> or get a VP penalty.
+                send this. {partnerAsk.partnerName} must upload <strong className="text-on-surface">photo proof</strong>{" "}
+                within <strong className="text-on-surface">24 hours</strong> or get a VP penalty.
               </p>
               <p className="text-xs text-on-surface-variant">
                 Your VP: <strong className="text-on-surface">{partnerAsk.myVpThisWeek.toFixed(1)}</strong> ·{" "}
