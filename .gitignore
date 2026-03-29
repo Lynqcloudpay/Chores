@@ -1,0 +1,23 @@
+.DS_Store
+*.log
+
+# Env & secrets
+**/.env
+**/.env.local
+**/.env.*.local
+!**/.env.example
+
+# Dependencies & build output
+**/node_modules/
+**/.next/
+**/out/
+**/dist/
+**/build/
+**/.vercel/
+**/.expo/
+**/*.tsbuildinfo
+
+# IDE
+.idea/
+.vscode/*
+!.vscode/extensions.json

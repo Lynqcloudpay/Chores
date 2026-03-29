@@ -1,0 +1,35 @@
+{
+  "expo": {
+    "name": "Equity Engine",
+    "slug": "equity-engine",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "equity-engine",
+    "userInterfaceStyle": "light",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#f0fdf4"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.equityengine.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#ecfdf5",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "package": "com.equityengine.app",
+      "predictiveBackGestureEnabled": true
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": ["expo-router"]
+  }
+}

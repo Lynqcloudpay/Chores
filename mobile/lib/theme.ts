@@ -1,0 +1,15 @@
+export const theme = {
+  bg: '#f4faf5',
+  card: '#ffffff',
+  border: '#e2e8f0',
+  text: '#0f172a',
+  muted: '#64748b',
+  balance: '#4ade80',
+  balanceSoft: '#dcfce7',
+  balanceText: '#166534',
+  tipA: '#f59e0b',
+  tipASoft: '#fffbeb',
+  tipB: '#3b82f6',
+  tipBSoft: '#eff6ff',
+  danger: '#ef4444',
+};

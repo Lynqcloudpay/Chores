@@ -1,0 +1,104 @@
+@import "tailwindcss";
+
+/* Estate Editorial (Stitch) — token names match generated HTML */
+@theme inline {
+  --font-sans: var(--font-plus-jakarta), ui-sans-serif, system-ui, sans-serif;
+  --font-headline: var(--font-plus-jakarta), ui-sans-serif, system-ui, sans-serif;
+  --font-body: var(--font-plus-jakarta), ui-sans-serif, system-ui, sans-serif;
+  --font-label: var(--font-plus-jakarta), ui-sans-serif, system-ui, sans-serif;
+
+  --color-outline-variant: #bbcabf;
+  --color-tertiary-fixed: #ffdcc3;
+  --color-surface-container-low: #f3f4f5;
+  --color-primary-container: #3fb687;
+  --color-inverse-primary: #68dba9;
+  --color-secondary-fixed-dim: #b4c5ff;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-bright: #f8f9fa;
+  --color-on-tertiary-container: #5a2e00;
+  --color-secondary-container: #316bf3;
+  --color-on-background: #191c1d;
+  --color-primary-fixed-dim: #68dba9;
+  --color-tertiary-container: #f08921;
+  --color-secondary-fixed: #dbe1ff;
+  --color-surface-container-highest: #e1e3e4;
+  --color-secondary: #0051d5;
+  --color-on-secondary-fixed-variant: #003ea8;
+  --color-surface-dim: #d9dadb;
+  --color-on-error: #ffffff;
+  --color-primary-fixed: #85f8c4;
+  --color-on-primary-fixed-variant: #005137;
+  --color-error: #ba1a1a;
+  --color-surface-tint: #006c4a;
+  --color-inverse-surface: #2e3132;
+  --color-tertiary: #904d00;
+  --color-on-error-container: #93000a;
+  --color-on-tertiary-fixed: #2f1500;
+  --color-on-secondary: #ffffff;
+  --color-on-primary-container: #00422c;
+  --color-surface: #f8f9fa;
+  --color-error-container: #ffdad6;
+  --color-on-primary-fixed: #002114;
+  --color-on-secondary-container: #fefcff;
+  --color-surface-container-high: #e7e8e9;
+  --color-on-secondary-fixed: #00174b;
+  --color-on-surface: #191c1d;
+  --color-surface-container: #edeeef;
+  --color-outline: #6c7a71;
+  --color-on-primary: #ffffff;
+  --color-on-surface-variant: #3c4a42;
+  --color-tertiary-fixed-dim: #ffb77d;
+  --color-background: #f8f9fa;
+  --color-on-tertiary: #ffffff;
+  --color-on-tertiary-fixed-variant: #6e3900;
+  --color-primary: #006c4a;
+  --color-inverse-on-surface: #f0f1f2;
+  --color-surface-variant: #e1e3e4;
+
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
+  --radius-3xl: 1.5rem;
+}
+
+body {
+  min-height: max(884px, 100dvh);
+}
+
+.material-symbols-outlined {
+  font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+}
+
+/* Bottom nav — softer rounded glyphs; active tabs use FILL 1 via inline style */
+.material-symbols-rounded {
+  font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+}
+
+.glass-header {
+  backdrop-filter: blur(20px);
+  background: rgba(248, 249, 250, 0.8);
+}
+
+.bento-shadow {
+  box-shadow: 0 12px 32px -4px rgba(25, 28, 29, 0.06);
+}
+
+.glass-effect {
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+@keyframes contribution-hero-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.contribution-hero-in {
+  animation: contribution-hero-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}

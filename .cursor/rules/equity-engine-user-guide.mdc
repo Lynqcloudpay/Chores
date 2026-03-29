@@ -1,0 +1,29 @@
+---
+description: Keep the in-app Equity Engine welcome & rules copy in sync with product behavior
+alwaysApply: true
+---
+
+# Equity Engine user guide (maintenance rule)
+
+The modal `web/src/components/EquityEngineRulesModal.tsx` is the **canonical in-app** explanation of rules, the points system, and how to log contributions. The welcome card `web/src/components/EquityEngineWelcome.tsx` is display-only (greeting + invite code).
+
+## When to update it
+
+Whenever you change behavior that users would notice, **update the modal copy in the same change** (or immediately after) so instructions stay accurate. Examples:
+
+- VP math (e.g. $ conversion, default low/medium/high chore VP, penalties).
+- Contribution flows (center **+** in the bottom bar, financial vs chore, preset vs custom, proof requirements).
+- Week boundaries or where history lives.
+- Partner approval rules (custom chores, effort revision, household chore VP proposals).
+- Partner asks / delegation rules (who can ask, rollover, penalty multiplier).
+- New major sections on the dashboard that affect “how it works.”
+
+## How to update
+
+1. Edit **copy** in `EquityEngineRulesModal.tsx` (and short strings in `EquityEngineWelcome.tsx` if the greeting or invite row changes). Pass any needed names from `DashboardPage` into the modal props.
+2. Prefer importing constants from `web/src/lib/vp.ts` (e.g. `CHORE_VP`, `VP_PER_DOLLAR`) for numbers that must match the app.
+3. Keep the modal **scannable** (headings, short paragraphs). The **?** control in `AppHeader` opens this modal.
+
+## Do not
+
+- Duplicate long policy text in unrelated markdown files unless the user asks — the **source of truth for user-facing rules in the product** is `EquityEngineRulesModal.tsx`.

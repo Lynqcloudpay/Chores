@@ -1,0 +1,41 @@
+{
+  "assetName": "assets/d8c15436bd694b3e91ca97155a4425a6",
+  "displayName": "Estate Editorial",
+  "theme": {
+    "colorMode": "LIGHT",
+    "font": "PLUS_JAKARTA_SANS",
+    "headlineFont": "PLUS_JAKARTA_SANS",
+    "bodyFont": "PLUS_JAKARTA_SANS",
+    "labelFont": "PLUS_JAKARTA_SANS",
+    "roundness": "ROUND_EIGHT",
+    "customColor": "#10B981",
+    "colorVariant": "FIDELITY",
+    "overridePrimaryColor": "#059669",
+    "overrideSecondaryColor": "#2563EB",
+    "overrideTertiaryColor": "#D97706",
+    "overrideNeutralColor": "#F9FAFB",
+    "spacingScale": 3,
+    "namedColors": {
+      "background": "#f8f9fa",
+      "surface": "#f8f9fa",
+      "surface_container": "#edeeef",
+      "surface_container_low": "#f3f4f5",
+      "surface_container_lowest": "#ffffff",
+      "surface_container_high": "#e7e8e9",
+      "surface_container_highest": "#e1e3e4",
+      "primary": "#006c4a",
+      "primary_container": "#3fb687",
+      "on_primary": "#ffffff",
+      "secondary": "#0051d5",
+      "secondary_container": "#316bf3",
+      "tertiary": "#904d00",
+      "tertiary_container": "#f08921",
+      "on_surface": "#191c1d",
+      "on_surface_variant": "#3c4a42",
+      "outline": "#6c7a71",
+      "outline_variant": "#bbcabf",
+      "error": "#ba1a1a"
+    }
+  },
+  "source": "Stitch list_design_systems(projectId=14603314186666696115)"
+}

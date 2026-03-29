@@ -1,0 +1,27 @@
+{
+  "projectId": "14603314186666696115",
+  "exportedAt": "2026-03-28T13:12:00Z",
+  "downloadCommand": "curl -fL -o <file> <url from get_screen screenshot/htmlCode downloadUrl>",
+  "screens": [
+    {
+      "title": "Equity History (Light)",
+      "screenId": "44230b5425064fd49da55243ca74d2eb",
+      "files": ["01-equity-history-light.png", "01-equity-history-light.html"]
+    },
+    {
+      "title": "Log Contribution (Light)",
+      "screenId": "37c5ca5e97f34e818f3571279b418896",
+      "files": ["02-log-contribution-light.png", "02-log-contribution-light.html"]
+    },
+    {
+      "title": "Equity Dashboard (Light)",
+      "screenId": "64a6decab21c4a0eb36ae64bd6f2287e",
+      "files": ["03-equity-dashboard-light.png", "03-equity-dashboard-light.html"]
+    }
+  ],
+  "designSystem": {
+    "requestedStubId": "asset-stub-assets-d8c15436bd694b3e91ca97155a4425a6-1774717373220",
+    "note": "get_screen returned NOT_FOUND for this stub; data pulled via list_design_systems. Matches asset name assets/d8c15436bd694b3e91ca97155a4425a6 (Estate Editorial).",
+    "files": ["04-design-system-estate-editorial.md", "04-design-system-estate-editorial.json"]
+  }
+}
