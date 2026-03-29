@@ -31,26 +31,24 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 
 ## Deploy on Vercel
 
-### One-time: CLI from this folder
+### Automatic deploy on every `git push` (recommended)
+
+This is the usual setup: **Vercel watches your Git repo** and builds on each push. No GitHub Actions required.
+
+1. Push this repo to GitHub (or GitLab / Bitbucket).
+2. In [Vercel](https://vercel.com/new): **Add New… → Project** → **Import** your repository.
+3. **Critical for this monorepo:** open **Configure Project** and set **Root Directory** to `web` (the Next.js app lives there, not the repo root).
+4. Add **Environment Variables** (Production): `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (see `.env.example`).
+5. Deploy. After that, every push to your production branch (usually `main`) triggers a new deployment automatically.
+
+If deploys fail, double-check **Root Directory = `web`** in Vercel → Project → Settings → General.
+
+### Manual deploy from CLI (optional)
 
 ```bash
 cd web
 npm ci
-vercel login          # browser login once
-vercel link           # attach to a Vercel project (or create new)
-npm run deploy        # production — same as: vercel deploy --prod
+vercel login
+vercel link
+npm run deploy
 ```
-
-Set **Environment Variables** in the Vercel project (Production): `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (see `.env.example`).
-
-### GitHub Actions (deploy on every push to `main`)
-
-The repo workflow `.github/workflows/deploy-vercel.yml` deploys the `web/` app when you push. Add these **repository secrets** (GitHub → Settings → Secrets and variables → Actions):
-
-| Secret | Where to find it |
-|--------|------------------|
-| `VERCEL_TOKEN` | [Vercel → Account Settings → Tokens](https://vercel.com/account/tokens) |
-| `VERCEL_ORG_ID` | Project → Settings → General → **Team / Personal** ID |
-| `VERCEL_PROJECT_ID` | Project → Settings → General → **Project ID** |
-
-Push your repo to GitHub first; the workflow only runs when `main` includes these secrets.
