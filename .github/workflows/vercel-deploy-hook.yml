@@ -1,0 +1,22 @@
+# Optional: add repo secret VERCEL_DEPLOY_HOOK (Vercel → Project → Settings → Git → Deploy Hooks).
+# If unset, this job is skipped — Vercel’s normal “Import Git Repository” deploy still runs on every push.
+name: Vercel deploy hook
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  hook:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Vercel production deploy
+        env:
+          HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK }}
+        run: |
+          if [ -z "${HOOK}" ]; then
+            echo "No VERCEL_DEPLOY_HOOK — skipping (push already triggers Vercel if the repo is linked)."
+            exit 0
+          fi
+          curl -fsS -X POST "$HOOK"
+          echo "Deploy hook OK."
