@@ -3,7 +3,12 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { CHORE_VP, mergedChorePresets, vpFromDollars, type Effort } from "@/lib/vp";
-import { ProofCaptureModal, type ProofCaptureResult } from "@/components/ProofCaptureModal";
+import {
+  ProofCaptureModal,
+  isChoreProofPair,
+  type ChoreProofPair,
+  type ProofCaptureResult,
+} from "@/components/ProofCaptureModal";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 const EMPTY_EXTRAS: Record<Effort, string[]> = { low: [], medium: [], high: [] };
@@ -20,7 +25,7 @@ type Props = {
     note?: string;
     /** Only custom free-text chores need partner approval (effort level confirmation). */
     choreEntryType?: "preset" | "custom";
-    proof: ProofCaptureResult;
+    proof: ProofCaptureResult | ChoreProofPair;
   }) => Promise<void>;
   busy: boolean;
   partnerName: string;
@@ -66,7 +71,7 @@ export function ContributionModal({
   const [choreMode, setChoreMode] = useState<"preset" | "custom">("preset");
   const [presetLabel, setPresetLabel] = useState<string | null>(null);
   const [customNote, setCustomNote] = useState("");
-  const [proofResult, setProofResult] = useState<ProofCaptureResult | null>(null);
+  const [proofResult, setProofResult] = useState<ProofCaptureResult | ChoreProofPair | null>(null);
   const [proofModalOpen, setProofModalOpen] = useState(false);
   const [proofModalMode, setProofModalMode] = useState<"chore" | "financial">("chore");
   const [requestLabel, setRequestLabel] = useState("");
@@ -119,7 +124,7 @@ export function ContributionModal({
 
   async function submitFinancial(e: React.FormEvent) {
     e.preventDefault();
-    if (!financialValid || !proofResult) return;
+    if (!financialValid || !proofResult || isChoreProofPair(proofResult)) return;
     try {
       await onSubmit({
         kind: "provision",
@@ -135,7 +140,7 @@ export function ContributionModal({
 
   async function submitChore(e: React.FormEvent) {
     e.preventDefault();
-    if (!choreValid || !proofResult) return;
+    if (!choreValid || !proofResult || !isChoreProofPair(proofResult)) return;
     try {
       await onSubmit({
         kind: "chore",
@@ -176,6 +181,7 @@ export function ContributionModal({
 
   function proofSummary() {
     if (!proofResult) return null;
+    if (isChoreProofPair(proofResult)) return "Before + after photos attached";
     if (proofResult.contentType === "application/pdf") return "PDF attached";
     return "Photo attached · stamped";
   }
@@ -217,7 +223,7 @@ export function ContributionModal({
             <div className="space-y-4">
               <p className="text-sm leading-relaxed text-on-surface-variant">
                 You&apos;ll need a <strong className="text-on-surface">photo or document</strong> for financial and
-                chore entries: receipt or bank statement for money, time-stamped picture for chores. Financial and preset
+                chore entries: receipt or bank statement for money, before &amp; after time-stamped photos for chores. Financial and preset
                 chores count right away — only <strong className="text-on-surface">custom</strong> chores need{" "}
                 <span className="font-semibold text-on-surface">{partnerName}</span> to confirm effort.{" "}
                 <strong className="text-on-surface">Request</strong> is different: you assign a task to your partner;
@@ -311,7 +317,7 @@ export function ContributionModal({
                   />
                 </div>
                 <p className="mt-4 text-sm text-on-surface-variant">
-                  ≈ {financialValid ? vpFromDollars(dollarNum) : "—"} VP toward this week
+                  ≈ {financialValid ? vpFromDollars(dollarNum) : "—"} VP (adds to your running total)
                 </p>
                 <label className="mt-4 flex cursor-pointer items-center justify-between gap-2 border-t border-outline-variant/10 pt-4 text-sm">
                   <span>Takeout / buy-out (both)</span>
@@ -350,7 +356,7 @@ export function ContributionModal({
                 disabled={busy || !financialValid || !proofResult}
                 className="w-full rounded-full bg-gradient-to-br from-primary to-primary-container py-4 font-headline font-bold text-on-primary shadow-lg disabled:opacity-50"
               >
-                {busy ? "Saving…" : "Add to week"}
+                {busy ? "Saving…" : "Save entry"}
               </button>
             </form>
           ) : null}
@@ -392,7 +398,7 @@ export function ContributionModal({
                 <p className="mb-3 text-sm font-semibold text-on-surface">Describe the chore</p>
                 {choreMode === "preset" ? (
                   <p className="mb-2 rounded-lg bg-primary-container/15 px-3 py-2 text-xs text-on-primary-container">
-                    Predetermined chores: adds to your week immediately. No approval.
+                    Predetermined chores: counts toward your total immediately. No approval.
                   </p>
                 ) : (
                   <p className="mb-2 text-xs text-on-surface-variant">
@@ -461,9 +467,9 @@ export function ContributionModal({
               </p>
 
               <div className="rounded-2xl border border-outline-variant/20 bg-surface-container-low/80 p-4">
-                <p className="text-sm font-semibold text-on-surface">Photo proof (required)</p>
+                <p className="text-sm font-semibold text-on-surface">Before &amp; after photos (required)</p>
                 <p className="mt-1 text-xs text-on-surface-variant">
-                  Use the camera — we stamp date and time on the picture when you capture it.
+                  First photo: starting state. Second: finished work. We stamp date and time on each capture.
                 </p>
                 {proofResult ? (
                   <p className="mt-2 text-sm font-medium text-primary">{proofSummary()}</p>
@@ -476,20 +482,20 @@ export function ContributionModal({
                   }}
                   className="mt-3 w-full rounded-full border border-primary/40 bg-primary/5 py-3 text-sm font-bold text-primary"
                 >
-                  {proofResult ? "Change photo" : "Take proof photo"}
+                  {proofResult ? "Retake before & after" : "Take before & after photos"}
                 </button>
               </div>
 
               <button
                 type="submit"
-                disabled={busy || !choreValid || !proofResult}
+                disabled={busy || !choreValid || !proofResult || !isChoreProofPair(proofResult)}
                 className="w-full rounded-full bg-gradient-to-br from-primary to-primary-container py-4 font-headline font-bold text-on-primary shadow-lg disabled:opacity-50"
               >
                 {busy
                   ? "Sending…"
                   : choreMode === "custom"
                     ? "Submit for partner approval"
-                    : "Add to week"}
+                    : "Save entry"}
               </button>
             </form>
           ) : null}
@@ -505,8 +511,8 @@ export function ContributionModal({
               </button>
               <p className="text-sm leading-relaxed text-on-surface-variant">
                 The partner who is <strong className="text-on-surface">ahead in VP</strong> this week (not tied) can
-                send this. {partnerAsk.partnerName} must upload <strong className="text-on-surface">photo proof</strong>{" "}
-                within <strong className="text-on-surface">24 hours</strong> or get a VP penalty.
+                send this. {partnerAsk.partnerName} must upload <strong className="text-on-surface">before &amp; after</strong>{" "}
+                photo proof within <strong className="text-on-surface">24 hours</strong> or get a VP penalty.
               </p>
               <p className="text-xs text-on-surface-variant">
                 Your VP: <strong className="text-on-surface">{partnerAsk.myVpThisWeek.toFixed(1)}</strong> ·{" "}

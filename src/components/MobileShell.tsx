@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useDisputesCenter } from "@/components/DisputesCenterProvider";
 
-type NavKey = "dashboard" | "logs" | "history" | "account";
+type NavKey = "dashboard" | "logs" | "account";
 
 type Props = {
   children: React.ReactNode;
@@ -14,7 +15,6 @@ type Props = {
 const items: { key: NavKey; href: string; label: string; icon: string }[] = [
   { key: "dashboard", href: "/", label: "Home", icon: "home" },
   { key: "logs", href: "/logs", label: "Logs", icon: "list_alt" },
-  { key: "history", href: "/history", label: "History", icon: "calendar_month" },
 ];
 
 function NavIcon({ name, active }: { name: string; active: boolean }) {
@@ -35,6 +35,7 @@ function NavIcon({ name, active }: { name: string; active: boolean }) {
 
 export function MobileShell({ children, active, onAddContribution }: Props) {
   const pathname = usePathname();
+  const { openDisputesCenter, disputesCenterOpen } = useDisputesCenter();
   const accountOn = pathname === "/account" || active === "account";
   const logsOn = pathname === "/logs" || active === "logs";
 
@@ -99,15 +100,10 @@ export function MobileShell({ children, active, onAddContribution }: Props) {
 
           <div className="flex flex-1 justify-center">{AddControl}</div>
 
-          {items.slice(2).map((item) => {
-            const isAct = item.key === "history" ? pathname === "/history" : item.key === active;
-            return (
-              <Link key={item.key} href={item.href} className={tab(isAct)} scroll>
-                <NavIcon name={item.icon} active={isAct} />
-                <span className="max-w-[64px] truncate">{item.label}</span>
-              </Link>
-            );
-          })}
+          <button type="button" onClick={openDisputesCenter} className={tab(disputesCenterOpen)} aria-label="Disputes">
+            <NavIcon name="gavel" active={disputesCenterOpen} />
+            <span className="max-w-[64px] truncate">Disputes</span>
+          </button>
 
           <Link href="/account" className={tab(accountOn)} aria-label="Account">
             <NavIcon name="manage_accounts" active={accountOn} />

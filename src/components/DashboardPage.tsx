@@ -9,7 +9,7 @@ import { ChoreLegend } from "@/components/ChoreLegend";
 import { ContributionGapHero } from "@/components/ContributionGapHero";
 import { DashboardHints } from "@/components/DashboardHints";
 import { DashboardWeekSkeleton } from "@/components/DashboardWeekSkeleton";
-import { DelegationAsks } from "@/components/DelegationAsks";
+import { PartnerAskStatus } from "@/components/PartnerAskStatus";
 import { CompleteSetupForm } from "@/components/CompleteSetupForm";
 import { EquityEngineRulesModal } from "@/components/EquityEngineRulesModal";
 import { EquityEngineWelcome } from "@/components/EquityEngineWelcome";
@@ -17,7 +17,7 @@ import { MobileShell } from "@/components/MobileShell";
 import { PathToParity } from "@/components/PathToParity";
 import { PendingApprovals } from "@/components/PendingApprovals";
 import { countsTowardVp, isPending } from "@/lib/contribution-status";
-import type { ProofCaptureResult } from "@/components/ProofCaptureModal";
+import { isChoreProofPair, type ChoreProofPair, type ProofCaptureResult } from "@/components/ProofCaptureModal";
 
 const ContributionModal = dynamic(
   () => import("@/components/ContributionModal").then((m) => m.ContributionModal),
@@ -48,7 +48,8 @@ export function DashboardPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [partner, setPartner] = useState<Profile | null>(null);
   const [household, setHousehold] = useState<Household | null>(null);
-  const [weekRows, setWeekRows] = useState<ContributionRow[]>([]);
+  /** All loaded contributions for this home (running VP — not filtered by week). */
+  const [contributionRows, setContributionRows] = useState<ContributionRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [reviewBusyId, setReviewBusyId] = useState<string | null>(null);
@@ -157,23 +158,20 @@ export function DashboardPage() {
     setHouseholdExtraPresets(next);
   }, []);
 
-  const loadContributions = useCallback(
-    async (hid: string) => {
-      const supabase = getSupabaseBrowserClient();
-      const { data, error } = await supabase
-        .from("contributions")
-        .select("*")
-        .eq("household_id", hid)
-        .eq("week_start", weekKey)
-        .order("created_at", { ascending: false });
-      if (error) {
-        console.warn(error.message);
-        return;
-      }
-      setWeekRows((data as ContributionRow[]) ?? []);
-    },
-    [weekKey],
-  );
+  const loadContributions = useCallback(async (hid: string) => {
+    const supabase = getSupabaseBrowserClient();
+    const { data, error } = await supabase
+      .from("contributions")
+      .select("*")
+      .eq("household_id", hid)
+      .order("created_at", { ascending: false })
+      .limit(10000);
+    if (error) {
+      console.warn(error.message);
+      return;
+    }
+    setContributionRows((data as ContributionRow[]) ?? []);
+  }, []);
 
   const loadDelegations = useCallback(
     async (hid: string) => {
@@ -225,7 +223,7 @@ export function DashboardPage() {
         setProfile(null);
         setHousehold(null);
         setPartner(null);
-        setWeekRows([]);
+        setContributionRows([]);
       }
       if (event === "INITIAL_SESSION") {
         setReady(true);
@@ -259,26 +257,32 @@ export function DashboardPage() {
     }
   }, [router]);
 
-  const countingRows = useMemo(() => weekRows.filter(countsTowardVp), [weekRows]);
+  /** Approved VP totals (excludes open disputes, etc.) — cumulative, never “resets” on Sunday. */
+  const countingRows = useMemo(() => contributionRows.filter(countsTowardVp), [contributionRows]);
+  /** Partner asks still compare VP earned in the current calendar week only. */
+  const countingRowsThisWeek = useMemo(
+    () => countingRows.filter((r) => r.week_start === weekKey),
+    [countingRows, weekKey],
+  );
   const pendingIncoming = useMemo(
     () =>
-      weekRows.filter((r) => {
+      contributionRows.filter((r) => {
         if (!userId) return false;
         if (r.profile_id === userId) return false;
         if (r.effort_revision_pending && r.kind === "chore") return true;
         return isPending(r);
       }),
-    [weekRows, userId],
+    [contributionRows, userId],
   );
   const pendingOutgoing = useMemo(
     () =>
-      weekRows.filter((r) => {
+      contributionRows.filter((r) => {
         if (!userId) return false;
         if (r.profile_id !== userId) return false;
         if (r.effort_revision_pending && r.kind === "chore") return true;
         return isPending(r);
       }),
-    [weekRows, userId],
+    [contributionRows, userId],
   );
 
   const { nameA, nameB, vpA, vpB, behindName, deficit } = useMemo(() => {
@@ -307,17 +311,17 @@ export function DashboardPage() {
 
   const myVpThisWeek = useMemo(() => {
     if (!profile) return 0;
-    return countingRows
+    return countingRowsThisWeek
       .filter((r) => r.profile_id === profile.id)
       .reduce((sum, r) => sum + Number(r.vp), 0);
-  }, [countingRows, profile]);
+  }, [countingRowsThisWeek, profile]);
 
   const partnerVpThisWeek = useMemo(() => {
     if (!partner) return 0;
-    return countingRows
+    return countingRowsThisWeek
       .filter((r) => r.profile_id === partner.id)
       .reduce((sum, r) => sum + Number(r.vp), 0);
-  }, [countingRows, partner]);
+  }, [countingRowsThisWeek, partner]);
 
   const canSendDelegationAsk = Boolean(partner && myVpThisWeek > partnerVpThisWeek);
 
@@ -329,7 +333,7 @@ export function DashboardPage() {
     effort?: Effort;
     note?: string;
     choreEntryType?: "preset" | "custom";
-    proof: ProofCaptureResult;
+    proof: ProofCaptureResult | ChoreProofPair;
   }) {
     if (!profile || !household || !userId) return;
     const vp =
@@ -346,13 +350,52 @@ export function DashboardPage() {
     setSubmitting(true);
     const supabase = getSupabaseBrowserClient();
     try {
-      const { path } = await uploadContributionProof(
-        supabase,
-        household.id,
-        contributionId,
-        payload.proof.blob,
-        payload.proof.contentType,
-      );
+      let proofPath: string;
+      let proofCapturedAt: string;
+      let proofAfterPath: string | null = null;
+      let proofAfterCapturedAt: string | null = null;
+
+      if (payload.kind === "provision") {
+        if (isChoreProofPair(payload.proof)) {
+          alert("Financial entries need a single receipt or document.");
+          return;
+        }
+        const { path } = await uploadContributionProof(
+          supabase,
+          household.id,
+          contributionId,
+          payload.proof.blob,
+          payload.proof.contentType,
+        );
+        proofPath = path;
+        proofCapturedAt = payload.proof.capturedAtIso;
+      } else {
+        if (!isChoreProofPair(payload.proof)) {
+          alert("Chores need before and after photos.");
+          return;
+        }
+        const before = await uploadContributionProof(
+          supabase,
+          household.id,
+          contributionId,
+          payload.proof.before.blob,
+          payload.proof.before.contentType,
+          "before",
+        );
+        const after = await uploadContributionProof(
+          supabase,
+          household.id,
+          contributionId,
+          payload.proof.after.blob,
+          payload.proof.after.contentType,
+          "after",
+        );
+        proofPath = before.path;
+        proofCapturedAt = payload.proof.before.capturedAtIso;
+        proofAfterPath = after.path;
+        proofAfterCapturedAt = payload.proof.after.capturedAtIso;
+      }
+
       const { error } = await supabase.from("contributions").insert({
         id: contributionId,
         household_id: household.id,
@@ -373,8 +416,10 @@ export function DashboardPage() {
               ? "custom"
               : "preset"
             : null,
-        proof_storage_path: path,
-        proof_captured_at: payload.proof.capturedAtIso,
+        proof_storage_path: proofPath,
+        proof_captured_at: proofCapturedAt,
+        proof_after_storage_path: proofAfterPath,
+        proof_after_captured_at: proofAfterCapturedAt,
       });
       if (error) {
         alert(error.message);
@@ -392,7 +437,7 @@ export function DashboardPage() {
 
   async function handleApprove(id: string) {
     if (!userId || !household) return;
-    const row = weekRows.find((r) => r.id === id);
+    const row = contributionRows.find((r) => r.id === id);
     setReviewBusyId(id);
     const supabase = getSupabaseBrowserClient();
 
@@ -446,7 +491,7 @@ export function DashboardPage() {
 
   async function handleReject(id: string) {
     if (!userId || !household) return;
-    const row = weekRows.find((r) => r.id === id);
+    const row = contributionRows.find((r) => r.id === id);
     setReviewBusyId(id);
     const supabase = getSupabaseBrowserClient();
 
@@ -586,16 +631,12 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=…`}
               includeGlobalPresets={!household.chore_presets_onboarded_at}
             />
             {profile && userId ? (
-              <DelegationAsks
-                choreVp={choreVpTiers}
+              <PartnerAskStatus
                 householdId={household.id}
                 weekKey={weekKey}
                 userId={userId}
                 partner={partner}
                 delegations={delegations}
-                canSendAsk={canSendDelegationAsk}
-                myVpThisWeek={myVpThisWeek}
-                partnerVpThisWeek={partnerVpThisWeek}
                 onRefresh={() => refreshWeekData(household.id)}
               />
             ) : null}
@@ -614,11 +655,12 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=…`}
               <Link href="/logs" className="font-medium text-primary underline underline-offset-2">
                 Logs
               </Link>{" "}
-              for this week&apos;s activity ·{" "}
+              for the full list · <span className="font-semibold text-on-surface">Disputes</span> in the bar below for proof
+              conflicts ·{" "}
               <Link href="/history" className="font-medium text-primary underline underline-offset-2">
                 History
               </Link>{" "}
-              for past weeks. Weeks reset Sunday midnight.
+              for week-by-week charts.
             </p>
           </>
         )}

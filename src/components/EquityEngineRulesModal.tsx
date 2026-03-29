@@ -47,20 +47,20 @@ export function EquityEngineRulesModal({ open, onClose, nameA, nameB }: Props) {
 
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 text-[13px] leading-relaxed text-on-surface-variant sm:px-5 sm:py-5">
           <section className="space-y-2">
-            <h3 className="text-sm font-bold text-on-surface">This week &amp; Value Points</h3>
+            <h3 className="text-sm font-bold text-on-surface">Value Points (running totals)</h3>
             <p>
-              <strong className="text-on-surface">VP</strong> is for <strong className="text-on-surface">this calendar week only</strong> (week starts{" "}
-              <strong className="text-on-surface">Sunday at midnight</strong> local). Each week resets — nothing rolls over automatically.
+              <strong className="text-on-surface">VP</strong> adds up over time — <strong className="text-on-surface">scores do not reset</strong> each week. The{" "}
+              <strong className="text-on-surface">balance card</strong> on the home screen shows the running split of approved VP between {nameA} and {nameB}. Use the{" "}
+              <strong className="text-on-surface">center +</strong> in the bottom bar to log contributions.
             </p>
             <p>
-              The <strong className="text-on-surface">balance card</strong> on the home screen shows how approved VP is split between {nameA} and {nameB}. Use the{" "}
-              <strong className="text-on-surface">center +</strong> in the bottom bar to log contributions.
+              New entries are still tagged with the <strong className="text-on-surface">week</strong> they were logged in (weeks start <strong className="text-on-surface">Sunday</strong> local) for charts and partner-ask rules.
             </p>
             <p>
               <Link href="/history" className="font-semibold text-primary underline underline-offset-2" onClick={onClose}>
                 History
               </Link>{" "}
-              is for <strong className="text-on-surface">past completed weeks</strong>, not the live current week.
+              shows <strong className="text-on-surface">week-by-week</strong> summaries; the home screen shows <strong className="text-on-surface">all-time</strong> totals (up to the latest data loaded).
             </p>
           </section>
 
@@ -98,7 +98,7 @@ export function EquityEngineRulesModal({ open, onClose, nameA, nameB }: Props) {
               The partner with <strong className="text-on-surface">more VP this week</strong> (not tied) can{" "}
               <strong className="text-on-surface">request a task</strong> from the partner who owes (less VP). The assignee must upload{" "}
               <strong className="text-on-surface">photo proof</strong> within <strong className="text-on-surface">24 hours</strong> or receive a{" "}
-              <strong className="text-on-surface">2× VP penalty</strong>. Use the Partner asks block on the home screen.
+              <strong className="text-on-surface">2× VP penalty</strong>. Send from the <strong className="text-on-surface">+</strong> menu (Request task).
             </p>
           </section>
 
@@ -114,7 +114,7 @@ export function EquityEngineRulesModal({ open, onClose, nameA, nameB }: Props) {
           <section className="mt-6 space-y-2">
             <h3 className="text-sm font-bold text-on-surface">Logs, History &amp; Account</h3>
             <p>
-              <strong className="text-on-surface">Logs</strong> is this week&apos;s live activity. <strong className="text-on-surface">History</strong> is the long-term ledger.{" "}
+              <strong className="text-on-surface">Logs</strong> lists approved activity (newest first). <strong className="text-on-surface">History</strong> is the week-by-week chart.{" "}
               <strong className="text-on-surface">Account</strong> (bottom bar) is for password, invite code, starting clean, and sign out.
             </p>
           </section>

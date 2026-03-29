@@ -79,7 +79,7 @@ export function RecentActivity({
     return (
       <section id="activity-log" className="scroll-mt-24 space-y-4">
         <h2 className="font-headline text-2xl font-bold text-on-background">Recent activity</h2>
-        <p className="text-sm text-on-surface-variant">No entries this week yet.</p>
+        <p className="text-sm text-on-surface-variant">No approved entries yet.</p>
       </section>
     );
   }
@@ -146,7 +146,7 @@ export function RecentActivity({
                       </p>
                     ) : null}
                     <div className="mt-1 flex flex-wrap items-center gap-2">
-                      <ProofLinkButton storagePath={r.proof_storage_path} />
+                      <ProofLinkButton storagePath={r.proof_storage_path} afterStoragePath={r.proof_after_storage_path} />
                       {canDisputePartnerEntry ? (
                         <button
                           type="button"
@@ -234,7 +234,7 @@ export function RecentActivity({
         <div>
           <h2 className="font-headline text-2xl font-bold text-on-background">Recent activity</h2>
           <p className="mt-0.5 text-sm text-on-surface-variant">
-            {sortedRows.length} {sortedRows.length === 1 ? "entry" : "entries"} this week · newest first
+            {sortedRows.length} {sortedRows.length === 1 ? "entry" : "entries"} · newest first
           </p>
         </div>
         <div className="space-y-3">{rowNodes}</div>
@@ -254,7 +254,7 @@ export function RecentActivity({
           <div className="min-w-0 text-left">
             <h2 className="font-headline text-2xl font-bold text-on-background">Recent activity</h2>
             <p className="mt-0.5 text-sm text-on-surface-variant">
-              {sortedRows.length} {sortedRows.length === 1 ? "entry" : "entries"} this week · newest first
+              {sortedRows.length} {sortedRows.length === 1 ? "entry" : "entries"} · newest first
               {moreThanPreview ? (
                 <>
                   {" "}

@@ -6,6 +6,8 @@ export function proofObjectPath(
   householdId: string,
   contributionId: string,
   contentType: string,
+  /** Second image for chore before/after flow */
+  slot: "before" | "after" = "before",
 ): string {
   const ext =
     contentType === "application/pdf"
@@ -15,7 +17,8 @@ export function proofObjectPath(
         : contentType === "image/webp"
           ? "webp"
           : "jpg";
-  return `${householdId}/${contributionId}.${ext}`;
+  const base = slot === "after" ? `${contributionId}-after` : contributionId;
+  return `${householdId}/${base}.${ext}`;
 }
 
 export async function uploadContributionProof(
@@ -24,8 +27,9 @@ export async function uploadContributionProof(
   contributionId: string,
   blob: Blob,
   contentType: string,
+  slot: "before" | "after" = "before",
 ): Promise<{ path: string }> {
-  const path = proofObjectPath(householdId, contributionId, contentType);
+  const path = proofObjectPath(householdId, contributionId, contentType, slot);
   const { error } = await supabase.storage.from(PROOF_BUCKET).upload(path, blob, {
     contentType,
     upsert: false,

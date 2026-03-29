@@ -33,7 +33,7 @@ export function ContributionGapHero({ nameA, nameB, vpA, vpB }: Props) {
 
       <div className="relative px-4 pb-5 pt-4">
         <p className="text-center text-[10px] font-bold uppercase tracking-[0.18em] text-on-surface-variant">
-          Contribution balance · this week
+          Contribution balance · running total
         </p>
 
         {/* Two-column scoreboard — clear numbers, no gauge */}
@@ -43,7 +43,7 @@ export function ContributionGapHero({ nameA, nameB, vpA, vpB }: Props) {
             <p className="mt-1 font-headline text-2xl font-extrabold tabular-nums tracking-tight text-on-background">
               {sum > 0 ? formatVp(vpA) : "—"}
             </p>
-            <p className="mt-0.5 text-xs tabular-nums text-on-surface-variant">{sum > 0 ? `${pctA.toFixed(0)}% of week` : "No VP yet"}</p>
+            <p className="mt-0.5 text-xs tabular-nums text-on-surface-variant">{sum > 0 ? `${pctA.toFixed(0)}% of total` : "No VP yet"}</p>
           </div>
           <div className="min-w-0 pl-2 text-center sm:pl-3">
             <p className="truncate text-[11px] font-semibold text-blue-800 dark:text-blue-200">{nameB}</p>
@@ -51,7 +51,7 @@ export function ContributionGapHero({ nameA, nameB, vpA, vpB }: Props) {
               {sum > 0 ? formatVp(vpB) : "—"}
             </p>
             <p className="mt-0.5 text-xs tabular-nums text-on-surface-variant">
-              {sum > 0 ? `${(100 - pctA).toFixed(0)}% of week` : "No VP yet"}
+              {sum > 0 ? `${(100 - pctA).toFixed(0)}% of total` : "No VP yet"}
             </p>
           </div>
         </div>
@@ -59,7 +59,7 @@ export function ContributionGapHero({ nameA, nameB, vpA, vpB }: Props) {
         {/* Single horizontal meter */}
         <div className="mt-4">
           <p className="mb-1.5 text-center text-[10px] font-medium uppercase tracking-wider text-on-surface-variant/90">
-            Share of this week
+            Share of total VP
           </p>
           <div className="h-3 w-full overflow-hidden rounded-full bg-surface-container-high shadow-inner ring-1 ring-black/[0.04] dark:ring-white/10">
             {sum <= 0 ? (
@@ -84,7 +84,7 @@ export function ContributionGapHero({ nameA, nameB, vpA, vpB }: Props) {
             <>
               <p className="font-headline text-2xl font-extrabold tracking-tight text-primary">Balanced</p>
               <p className="mt-1 text-xs leading-snug text-on-surface-variant">
-                Same VP this week — nice work, {nameA} & {nameB}.
+                Same running VP — nice work, {nameA} & {nameB}.
               </p>
             </>
           ) : sum <= 0 ? (

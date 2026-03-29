@@ -69,9 +69,12 @@ export type ContributionRow = {
   reviewed_at?: string | null;
   /** Chore only: preset vs custom (free-text) — used when promoting approved customs to household presets. */
   chore_source?: "preset" | "custom" | null;
-  /** Storage path in `contribution-proofs` bucket. */
+  /** Storage path in `contribution-proofs` bucket (before / primary). */
   proof_storage_path?: string | null;
   proof_captured_at?: string | null;
+  /** Chore: optional second image (after). */
+  proof_after_storage_path?: string | null;
+  proof_after_captured_at?: string | null;
   /** True while a new effort level awaits partner approval (approved chores only). */
   effort_revision_pending?: boolean;
   pending_effort?: EffortLevel | null;

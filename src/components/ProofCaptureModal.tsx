@@ -9,15 +9,24 @@ export type ProofCaptureResult = {
   contentType: string;
 };
 
+/** Chore entries use a before + after photo pair. */
+export type ChoreProofPair = { before: ProofCaptureResult; after: ProofCaptureResult };
+
+export function isChoreProofPair(x: ProofCaptureResult | ChoreProofPair): x is ChoreProofPair {
+  return x != null && typeof x === "object" && "before" in x && "after" in x;
+}
+
 type Props = {
   open: boolean;
   onClose: () => void;
-  /** Chore: camera only. Financial: camera or file (receipt photo / bank PDF or screenshot). */
+  /** Chore: two photos (before / after). Financial: camera or file (receipt / PDF). */
   mode: "chore" | "financial";
-  onConfirm: (result: ProofCaptureResult) => void;
+  onConfirm: (result: ProofCaptureResult | ChoreProofPair) => void;
 };
 
 type Phase = "camera" | "preview";
+
+type ChorePart = "before" | "after";
 
 export function ProofCaptureModal({ open, onClose, mode, onConfirm }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -27,6 +36,8 @@ export function ProofCaptureModal({ open, onClose, mode, onConfirm }: Props) {
   const previewObjectUrlRef = useRef<string | null>(null);
 
   const [phase, setPhase] = useState<Phase>("camera");
+  const [chorePart, setChorePart] = useState<ChorePart>("before");
+  const [beforeResult, setBeforeResult] = useState<ProofCaptureResult | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [pending, setPending] = useState<ProofCaptureResult | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
@@ -67,11 +78,15 @@ export function ProofCaptureModal({ open, onClose, mode, onConfirm }: Props) {
       }
       setPreviewUrl(null);
       setPhase("camera");
+      setChorePart("before");
+      setBeforeResult(null);
       setPending(null);
       setCameraError(null);
       return;
     }
     setPhase("camera");
+    setChorePart("before");
+    setBeforeResult(null);
     setPending(null);
     setCameraError(null);
     if (previewObjectUrlRef.current) {
@@ -195,13 +210,48 @@ export function ProofCaptureModal({ open, onClose, mode, onConfirm }: Props) {
 
   function confirm() {
     if (!pending) return;
-    onConfirm(pending);
-    onClose();
+    if (mode === "financial") {
+      onConfirm(pending);
+      onClose();
+      return;
+    }
+    if (chorePart === "before") {
+      setBeforeResult(pending);
+      if (previewObjectUrlRef.current) {
+        URL.revokeObjectURL(previewObjectUrlRef.current);
+        previewObjectUrlRef.current = null;
+      }
+      setPreviewUrl(null);
+      setPending(null);
+      setPhase("camera");
+      setChorePart("after");
+      void startCamera();
+      return;
+    }
+    if (beforeResult) {
+      onConfirm({ before: beforeResult, after: pending });
+      onClose();
+    }
   }
 
   if (!open) return null;
 
-  const title = mode === "chore" ? "Photo of completed chore" : "Receipt or bank proof";
+  const title =
+    mode === "financial"
+      ? "Receipt or bank proof"
+      : chorePart === "before"
+        ? "Before — starting state"
+        : "After — finished chore";
+
+  const previewPrimaryLabel =
+    mode === "chore" ? (chorePart === "before" ? "Before preview" : "After preview") : "Proof preview";
+
+  const confirmLabel =
+    mode === "financial"
+      ? "Use this proof"
+      : chorePart === "before"
+        ? "Next: after photo"
+        : "Submit both photos";
 
   return (
     <div className="fixed inset-0 z-[110] flex items-end justify-center bg-black/70 sm:items-center sm:p-4">
@@ -228,13 +278,14 @@ export function ProofCaptureModal({ open, onClose, mode, onConfirm }: Props) {
         <div className="flex flex-1 flex-col overflow-y-auto p-4">
           {mode === "chore" ? (
             <p className="mb-3 text-sm text-on-surface-variant">
-              Use the live camera. We stamp the date and time onto the photo so it reflects when you finished the
-              chore.
+              {chorePart === "before"
+                ? "Take a photo of the situation before you start (area, task, or mess). Time stamp is added automatically."
+                : "Take a photo after you finished so your partner can see the result. Time stamp is added automatically."}
             </p>
           ) : (
             <p className="mb-3 text-sm text-on-surface-variant">
-              Take a clear photo of your receipt, or upload a PDF/screenshot of a bank statement. Images get a
-              time stamp at upload.
+              Take a clear photo of your receipt, or upload a PDF/screenshot of a bank statement. Images get a time
+              stamp at upload.
             </p>
           )}
 
@@ -310,7 +361,7 @@ export function ProofCaptureModal({ open, onClose, mode, onConfirm }: Props) {
                 </div>
               ) : previewUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element -- blob preview
-                <img src={previewUrl} alt="Proof preview" className="max-h-[45vh] w-full rounded-2xl object-contain" />
+                <img src={previewUrl} alt={previewPrimaryLabel} className="max-h-[45vh] w-full rounded-2xl object-contain" />
               ) : null}
               <div className="flex gap-2">
                 <button
@@ -325,7 +376,7 @@ export function ProofCaptureModal({ open, onClose, mode, onConfirm }: Props) {
                   onClick={confirm}
                   className="flex-1 rounded-full bg-primary py-3 text-sm font-bold text-on-primary"
                 >
-                  Use this proof
+                  {confirmLabel}
                 </button>
               </div>
             </div>

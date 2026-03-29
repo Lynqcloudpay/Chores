@@ -139,7 +139,7 @@ export default function HistoryPage() {
   }
 
   return (
-    <MobileShell active="history">
+    <MobileShell active="dashboard">
       <AppHeader displayName={profile.display_name} />
       <main className="mx-auto w-full max-w-2xl px-3 pb-40 pt-10 sm:px-4 sm:pb-44">
         <section className="mb-14">

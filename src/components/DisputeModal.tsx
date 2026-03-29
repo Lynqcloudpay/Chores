@@ -34,33 +34,52 @@ export function DisputeModal({ row, open, phase, onClose, partnerName, onResolve
   const [err, setErr] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewPdf, setPreviewPdf] = useState(false);
-  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [previewAfterUrl, setPreviewAfterUrl] = useState<string | null>(null);
+  const [previewAfterPdf, setPreviewAfterPdf] = useState(false);
+  const [lightbox, setLightbox] = useState<{ url: string; isPdf: boolean } | null>(null);
 
   useEffect(() => {
     if (!open) {
       setNote("");
       setErr(null);
       setPreviewUrl(null);
-      setLightboxOpen(false);
+      setPreviewAfterUrl(null);
+      setLightbox(null);
     }
   }, [open]);
 
-  async function loadProofPreview(path: string | null | undefined) {
-    if (!path) return;
-    const supabase = getSupabaseBrowserClient();
-    const { data, error } = await supabase.storage.from(PROOF_BUCKET).createSignedUrl(path, 3600);
-    if (error || !data?.signedUrl) return;
-    setPreviewUrl(data.signedUrl);
-    setPreviewPdf(path.toLowerCase().endsWith(".pdf"));
-  }
-
   useEffect(() => {
-    if (!open || !row?.proof_storage_path) {
+    if (!open || !row) {
       setPreviewUrl(null);
+      setPreviewAfterUrl(null);
       return;
     }
-    void loadProofPreview(row.proof_storage_path);
-  }, [open, row?.proof_storage_path, row?.id]);
+    const supabase = getSupabaseBrowserClient();
+    let cancelled = false;
+    void (async () => {
+      if (row.proof_storage_path) {
+        const { data, error } = await supabase.storage.from(PROOF_BUCKET).createSignedUrl(row.proof_storage_path, 3600);
+        if (!cancelled && !error && data?.signedUrl) {
+          setPreviewUrl(data.signedUrl);
+          setPreviewPdf(row.proof_storage_path.toLowerCase().endsWith(".pdf"));
+        }
+      } else {
+        setPreviewUrl(null);
+      }
+      if (row.proof_after_storage_path) {
+        const { data, error } = await supabase.storage.from(PROOF_BUCKET).createSignedUrl(row.proof_after_storage_path, 3600);
+        if (!cancelled && !error && data?.signedUrl) {
+          setPreviewAfterUrl(data.signedUrl);
+          setPreviewAfterPdf(row.proof_after_storage_path.toLowerCase().endsWith(".pdf"));
+        }
+      } else {
+        setPreviewAfterUrl(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, row?.id, row?.proof_storage_path, row?.proof_after_storage_path]);
 
   useEffect(() => {
     if (!open) return;
@@ -142,15 +161,26 @@ export function DisputeModal({ row, open, phase, onClose, partnerName, onResolve
                 : `You opened this dispute. If proof was fraudulent, ${partnerName} loses 2× the original VP as a penalty. If proof stands, the entry counts as normal.`}
             </p>
 
-            {row.proof_storage_path ? (
-              <div className="mt-4">
-                <button
-                  type="button"
-                  onClick={() => setLightboxOpen(true)}
-                  className="text-sm font-semibold text-primary underline underline-offset-2"
-                >
-                  View attached proof
-                </button>
+            {row.proof_storage_path || row.proof_after_storage_path ? (
+              <div className="mt-4 flex flex-wrap gap-3">
+                {previewUrl ? (
+                  <button
+                    type="button"
+                    onClick={() => setLightbox({ url: previewUrl, isPdf: previewPdf })}
+                    className="text-sm font-semibold text-primary underline underline-offset-2"
+                  >
+                    {previewAfterUrl ? "View before" : "View attached proof"}
+                  </button>
+                ) : null}
+                {previewAfterUrl ? (
+                  <button
+                    type="button"
+                    onClick={() => setLightbox({ url: previewAfterUrl, isPdf: previewAfterPdf })}
+                    className="text-sm font-semibold text-primary underline underline-offset-2"
+                  >
+                    View after
+                  </button>
+                ) : null}
               </div>
             ) : (
               <p className="mt-4 text-xs text-on-surface-variant">No proof file on this row.</p>
@@ -202,7 +232,12 @@ export function DisputeModal({ row, open, phase, onClose, partnerName, onResolve
           </div>
         </div>
       </div>
-      <ProofLightbox open={lightboxOpen} onClose={() => setLightboxOpen(false)} url={previewUrl} isPdf={previewPdf} />
+      <ProofLightbox
+        open={lightbox !== null}
+        onClose={() => setLightbox(null)}
+        url={lightbox?.url ?? null}
+        isPdf={lightbox?.isPdf ?? false}
+      />
     </>
   );
 }

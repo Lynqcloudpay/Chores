@@ -19,14 +19,14 @@ const EffortRevisionModal = dynamic(
 );
 
 /**
- * Full-week activity log (same data as dashboard Recent activity) on /logs.
+ * Household activity log — all approved entries (newest first) on /logs.
  */
 export function ActivityLogPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [partner, setPartner] = useState<Profile | null>(null);
   const [household, setHousehold] = useState<Household | null>(null);
-  const [weekRows, setWeekRows] = useState<ContributionRow[]>([]);
+  const [contributionRows, setContributionRows] = useState<ContributionRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [effortRevisionRow, setEffortRevisionRow] = useState<ContributionRow | null>(null);
 
@@ -65,13 +65,13 @@ export function ActivityLogPage() {
         .from("contributions")
         .select("*")
         .eq("household_id", hid)
-        .eq("week_start", weekKey)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(10000);
       if (error) {
         console.warn(error.message);
         return;
       }
-      setWeekRows((data as ContributionRow[]) ?? []);
+      setContributionRows((data as ContributionRow[]) ?? []);
     },
     [weekKey],
   );
@@ -97,7 +97,7 @@ export function ActivityLogPage() {
         setProfile(null);
         setHousehold(null);
         setPartner(null);
-        setWeekRows([]);
+        setContributionRows([]);
       }
     });
     return () => subscription.unsubscribe();
@@ -112,7 +112,7 @@ export function ActivityLogPage() {
     loadContributions(household.id).finally(() => setLoading(false));
   }, [household?.id, loadContributions]);
 
-  const approvedRows = useMemo(() => weekRows.filter(isApproved), [weekRows]);
+  const approvedRows = useMemo(() => contributionRows.filter(isApproved), [contributionRows]);
   const choreVpTiers = useMemo(() => (household ? effectiveChoreVp(household) : { low: 15, medium: 30, high: 50 }), [household]);
 
   if (!isSupabaseConfigured()) {
@@ -132,7 +132,7 @@ export function ActivityLogPage() {
             <Link href="/login" className="font-semibold text-primary underline">
               Sign in
             </Link>{" "}
-            to see this week&apos;s log.
+            to see your activity log.
           </p>
         </main>
       </MobileShell>
@@ -147,8 +147,8 @@ export function ActivityLogPage() {
           <Link href="/" className="text-sm font-semibold text-primary underline underline-offset-2">
             ← Home
           </Link>
-          <h1 className="mt-2 font-headline text-xl font-bold text-on-surface">This week&apos;s log</h1>
-          <p className="mt-1 text-sm text-on-surface-variant">Entries for the current week · newest first</p>
+          <h1 className="mt-2 font-headline text-xl font-bold text-on-surface">Activity log</h1>
+          <p className="mt-1 text-sm text-on-surface-variant">All approved entries · newest first · VP totals never reset</p>
         </div>
 
         {loading ? (

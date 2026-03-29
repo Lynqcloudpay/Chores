@@ -77,7 +77,11 @@ export function PendingApprovals({
                   : `Requested by ${partnerName} · +${Number(r.vp)} VP proposed`}
               </p>
               <div className="mt-2">
-                <ProofLinkButton storagePath={r.proof_storage_path} label="View proof photo" />
+                <ProofLinkButton
+                  storagePath={r.proof_storage_path}
+                  afterStoragePath={r.proof_after_storage_path}
+                  label="View proof photo"
+                />
               </div>
               <div className="mt-4 flex gap-2">
                 <button
