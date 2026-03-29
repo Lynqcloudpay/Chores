@@ -17,6 +17,21 @@ type Props = {
   onResolved: () => void;
 };
 
+/** PostgREST returns PGRST202 when an RPC does not exist (migration not applied on hosted DB). */
+function disputeRpcErrorMessage(error: { message: string; code?: string }): string {
+  const code = error.code ?? "";
+  const msg = error.message ?? "";
+  if (
+    code === "PGRST202" ||
+    msg === "Not found" ||
+    /could not find the function/i.test(msg) ||
+    (/open_contribution_dispute|resolve_contribution_dispute/i.test(msg) && /not find|does not exist/i.test(msg))
+  ) {
+    return "Disputes need database functions that are not on your Supabase project yet. Dashboard → SQL → run the file supabase/migrations/20260329140000_contribution_disputes.sql from this repo (full file), or from the repo: cd web && supabase link && supabase db push.";
+  }
+  return msg;
+}
+
 function summarize(r: ContributionRow): string {
   if (r.kind === "provision" && r.amount_cents != null) {
     return `Financial · $${(r.amount_cents / 100).toFixed(2)} · +${Number(r.vp)} VP`;
@@ -103,7 +118,7 @@ export function DisputeModal({ row, open, phase, onClose, partnerName, onResolve
     });
     setBusy(false);
     if (error) {
-      setErr(error.message);
+      setErr(disputeRpcErrorMessage(error));
       return;
     }
     onResolved();
@@ -121,7 +136,7 @@ export function DisputeModal({ row, open, phase, onClose, partnerName, onResolve
     });
     setBusy(false);
     if (error) {
-      setErr(error.message);
+      setErr(disputeRpcErrorMessage(error));
       return;
     }
     onResolved();

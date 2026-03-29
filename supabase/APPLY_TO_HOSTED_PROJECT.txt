@@ -2,6 +2,11 @@ Your hosted Supabase project must have the same tables and functions as this app
 
 The errors "Could not find ... apply_delegation_penalties", "delegation_requests", or "reset_household_equity_data" mean these SQL files were never run on the live database.
 
+POST .../rpc/open_contribution_dispute → 404 (or "Not found")?
+  That RPC is created only by migration:
+    supabase/migrations/20260329140000_contribution_disputes.sql
+  Run that file in Supabase Dashboard → SQL (full contents), or run supabase db push so all migrations apply.
+
 RECOMMENDED — Supabase CLI (same end result as pasting SQL by hand)
 
   1. Install the Supabase CLI: https://supabase.com/docs/guides/cli
