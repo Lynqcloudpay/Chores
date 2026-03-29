@@ -10,6 +10,7 @@ import { JoinHouseholdWithCodeForm } from "@/components/JoinHouseholdWithCodeFor
 import { LeaveHouseholdSection } from "@/components/LeaveHouseholdSection";
 import { ResetHouseholdSection } from "@/components/ResetHouseholdSection";
 import { SubscriptionSection } from "@/components/SubscriptionSection";
+import { ChorePresetsEditor } from "@/components/ChorePresetsEditor";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { sessionOrRecover } from "@/lib/supabase/session";
 import type { Household, Profile } from "@/types/db";
@@ -254,6 +255,15 @@ export default function AccountPage() {
                 profile={profile}
                 partner={partner}
                 onRefresh={async () => {
+                  await load(userId);
+                }}
+              />
+            ) : null}
+
+            {household && profile ? (
+              <ChorePresetsEditor
+                householdId={household.id}
+                onSaved={async () => {
                   await load(userId);
                 }}
               />

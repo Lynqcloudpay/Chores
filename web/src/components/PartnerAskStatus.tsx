@@ -128,7 +128,10 @@ export function PartnerAskStatus({ householdId, weekKey, userId, partner, delega
 
   return (
     <>
-      <section className="rounded-2xl border border-secondary/20 bg-secondary-fixed/5 p-4">
+      <section
+        id="partner-asks"
+        className="scroll-mt-28 rounded-2xl border border-secondary/20 bg-secondary-fixed/5 p-4"
+      >
         <h2 className="font-headline text-base font-bold text-on-surface">Open partner asks</h2>
         <p className="mt-1 text-xs text-on-surface-variant">
           New requests are sent from the <span className="font-semibold text-on-surface">+</span> menu · one photo when you

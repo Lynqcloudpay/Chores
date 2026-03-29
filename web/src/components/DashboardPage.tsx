@@ -3,7 +3,7 @@
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppHeader } from "@/components/AppHeader";
 import { ChoreLegend } from "@/components/ChoreLegend";
 import { ContributionGapHero } from "@/components/ContributionGapHero";
@@ -16,6 +16,7 @@ import { EquityEngineWelcome } from "@/components/EquityEngineWelcome";
 import { MobileShell } from "@/components/MobileShell";
 import { PathToParity } from "@/components/PathToParity";
 import { HireLocalHelpCard } from "@/components/HireLocalHelpCard";
+import { useHouseholdAlerts } from "@/components/HouseholdAlertsProvider";
 import { PendingApprovals } from "@/components/PendingApprovals";
 import { countsTowardVp, isPending } from "@/lib/contribution-status";
 import type { ProofCaptureResult } from "@/components/ProofCaptureModal";
@@ -42,6 +43,9 @@ const EMPTY_EXTRA_PRESETS: Record<Effort, string[]> = {
 };
 
 export function DashboardPage() {
+  const householdAlerts = useHouseholdAlerts();
+  const alertsRef = useRef(householdAlerts);
+  alertsRef.current = householdAlerts;
   const router = useRouter();
   const searchParams = useSearchParams();
   const [ready, setReady] = useState(false);
@@ -204,6 +208,7 @@ export function DashboardPage() {
       });
       if (penErr) console.warn(penErr.message);
       await Promise.all([loadContributions(hid), loadDelegations(hid), loadHouseholdPresets(hid)]);
+      void alertsRef.current?.refresh();
     },
     [weekKey, loadContributions, loadDelegations, loadHouseholdPresets],
   );
