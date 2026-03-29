@@ -6,8 +6,9 @@ import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { PROOF_BUCKET } from "@/lib/upload-proof";
 
 type Props = {
+  /** Primary proof path (current single-photo flow). */
   storagePath: string | null | undefined;
-  /** Chore: second image (after). */
+  /** Legacy second image only — older rows; not required for new entries. */
   afterStoragePath?: string | null | undefined;
   label?: string;
 };
@@ -22,12 +23,15 @@ export function ProofLinkButton({ storagePath, afterStoragePath, label = "View p
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
   const [isPdf, setIsPdf] = useState(false);
 
-  if (!storagePath) return null;
-  const hasAfter = Boolean(afterStoragePath);
+  const primary = storagePath?.trim() || null;
+  const secondary = afterStoragePath?.trim() || null;
+  /** Prefer primary; if only legacy `proof_after_*` is set, still show one link. */
+  const mainPath = primary ?? secondary;
+  const legacySecond = primary && secondary ? secondary : null;
 
-  async function open() {
-    const path = storagePath;
-    if (!path) return;
+  if (!mainPath) return null;
+
+  async function open(path: string) {
     setBusy(true);
     try {
       const supabase = getSupabaseBrowserClient();
@@ -55,14 +59,21 @@ export function ProofLinkButton({ storagePath, afterStoragePath, label = "View p
         <button
           type="button"
           disabled={busy}
-          onClick={() => void open()}
+          onClick={() => void open(mainPath)}
           className="inline-flex items-center gap-1 rounded-full border border-outline-variant/30 px-2.5 py-1 text-xs font-semibold text-primary disabled:opacity-50"
         >
           <span className="material-symbols-outlined text-[16px]">attach_file</span>
-          {busy ? "…" : hasAfter ? "Before" : label}
+          {busy ? "…" : label}
         </button>
-        {hasAfter && afterStoragePath ? (
-          <ProofLinkButton storagePath={afterStoragePath} label="After" />
+        {legacySecond ? (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void open(legacySecond)}
+            className="inline-flex items-center gap-1 rounded-full border border-outline-variant/30 px-2.5 py-1 text-xs font-semibold text-primary disabled:opacity-50"
+          >
+            Second image (legacy)
+          </button>
         ) : null}
       </span>
       <ProofLightbox open={lightboxOpen} onClose={closeLightbox} url={signedUrl} isPdf={isPdf} />

@@ -41,6 +41,8 @@ type Props = {
     | null;
   /** Called after a partner ask is created successfully (e.g. refresh dashboard). */
   onPartnerAskSent?: () => void;
+  /** Open directly to financial step (e.g. outsourced service receipt). */
+  openMode?: { type: "financial"; note?: string } | null;
 };
 
 type Step = "choice" | "financial" | "chore" | "request";
@@ -58,9 +60,11 @@ export function ContributionModal({
   includeGlobalPresets = true,
   partnerAsk = null,
   onPartnerAskSent,
+  openMode = null,
 }: Props) {
   const [step, setStep] = useState<Step>("choice");
   const [dollars, setDollars] = useState("");
+  const [financialNoteExtra, setFinancialNoteExtra] = useState("");
   const [buyout, setBuyout] = useState(false);
   const [effort, setEffort] = useState<Effort>("medium");
   const [choreMode, setChoreMode] = useState<"preset" | "custom">("preset");
@@ -78,6 +82,7 @@ export function ContributionModal({
     if (!open) {
       setStep("choice");
       setDollars("");
+      setFinancialNoteExtra("");
       setBuyout(false);
       setEffort("medium");
       setChoreMode("preset");
@@ -89,8 +94,15 @@ export function ContributionModal({
       setRequestEffort("medium");
       setRequestBusy(false);
       setRequestErr(null);
+      return;
     }
-  }, [open]);
+    if (openMode?.type === "financial") {
+      setStep("financial");
+      setFinancialNoteExtra(openMode.note?.trim() ? openMode.note : "");
+    } else {
+      setStep("choice");
+    }
+  }, [open, openMode]);
 
   const extras = householdExtraPresets ?? EMPTY_EXTRAS;
 
@@ -124,7 +136,11 @@ export function ContributionModal({
       await onSubmit({
         kind: "provision",
         dollars: dollarNum,
-        note: buyout ? "Takeout / buy-out for both" : undefined,
+        note: buyout
+          ? "Takeout / buy-out for both"
+          : financialNoteExtra.trim()
+            ? financialNoteExtra.trim()
+            : undefined,
         proof: proofResult,
       });
       onClose();
@@ -322,6 +338,18 @@ export function ContributionModal({
                     className="h-4 w-4 rounded"
                   />
                 </label>
+                {!buyout ? (
+                  <label className="mt-4 block text-sm font-semibold text-on-surface">
+                    Note (optional)
+                    <input
+                      type="text"
+                      className="mt-1 w-full rounded-xl border border-outline-variant/25 bg-surface-container-lowest px-3 py-2.5 text-on-surface placeholder:text-on-surface-variant/50"
+                      placeholder="e.g. Outsourced cleaning · Maid Co."
+                      value={financialNoteExtra}
+                      onChange={(e) => setFinancialNoteExtra(e.target.value)}
+                    />
+                  </label>
+                ) : null}
               </div>
 
               <div className="rounded-2xl border border-outline-variant/20 bg-surface-container-low/80 p-4">

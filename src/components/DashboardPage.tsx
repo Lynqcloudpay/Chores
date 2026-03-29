@@ -15,6 +15,7 @@ import { EquityEngineRulesModal } from "@/components/EquityEngineRulesModal";
 import { EquityEngineWelcome } from "@/components/EquityEngineWelcome";
 import { MobileShell } from "@/components/MobileShell";
 import { PathToParity } from "@/components/PathToParity";
+import { HireLocalHelpCard } from "@/components/HireLocalHelpCard";
 import { PendingApprovals } from "@/components/PendingApprovals";
 import { countsTowardVp, isPending } from "@/lib/contribution-status";
 import type { ProofCaptureResult } from "@/components/ProofCaptureModal";
@@ -59,6 +60,10 @@ export function DashboardPage() {
   const [householdExtraPresets, setHouseholdExtraPresets] =
     useState<Record<Effort, string[]>>(EMPTY_EXTRA_PRESETS);
   const [delegations, setDelegations] = useState<DelegationRequestRow[]>([]);
+  const [contributionOpenMode, setContributionOpenMode] = useState<{
+    type: "financial";
+    note?: string;
+  } | null>(null);
 
   const weekKey = useMemo(() => toDateKey(getWeekStartSunday()), []);
 
@@ -327,6 +332,27 @@ export function DashboardPage() {
 
   const choreVpTiers = useMemo(() => effectiveChoreVp(household), [household]);
 
+  const iAmBehind = Boolean(
+    partner && behindName && profile && behindName === profile.display_name,
+  );
+
+  const saveServiceAreaZip = useCallback(
+    async (zip: string) => {
+      if (!household?.id) return;
+      const supabase = getSupabaseBrowserClient();
+      const { error } = await supabase
+        .from("households")
+        .update({ service_area_zip: zip.trim() || null })
+        .eq("id", household.id);
+      if (error) {
+        alert(error.message);
+        return;
+      }
+      await loadHouseholdRow(household.id);
+    },
+    [household?.id, loadHouseholdRow],
+  );
+
   async function handleSubmitRequest(payload: {
     kind: "provision" | "chore";
     dollars?: number;
@@ -350,21 +376,14 @@ export function DashboardPage() {
     setSubmitting(true);
     const supabase = getSupabaseBrowserClient();
     try {
-      let proofPath: string;
-      let proofCapturedAt: string;
-      let proofAfterPath: string | null = null;
-      let proofAfterCapturedAt: string | null = null;
-
-      const { path } = await uploadContributionProof(
+      const { path: proofPath } = await uploadContributionProof(
         supabase,
         household.id,
         contributionId,
         payload.proof.blob,
         payload.proof.contentType,
       );
-      proofPath = path;
-      proofCapturedAt = payload.proof.capturedAtIso;
-      // Chore: single after-style proof stored as primary; legacy rows may still have proof_after_*.
+      const proofCapturedAt = payload.proof.capturedAtIso;
 
       const { error } = await supabase.from("contributions").insert({
         id: contributionId,
@@ -388,8 +407,6 @@ export function DashboardPage() {
             : null,
         proof_storage_path: proofPath,
         proof_captured_at: proofCapturedAt,
-        proof_after_storage_path: proofAfterPath,
-        proof_after_captured_at: proofAfterCapturedAt,
       });
       if (error) {
         alert(error.message);
@@ -611,6 +628,16 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=…`}
               />
             ) : null}
             <PathToParity behindName={behindName} deficitVp={deficit} choreVp={choreVpTiers} />
+            <HireLocalHelpCard
+              visible={iAmBehind}
+              deficitVp={deficit}
+              serviceAreaZip={household.service_area_zip ?? ""}
+              onSaveZip={saveServiceAreaZip}
+              onLogPayment={(note) => {
+                setContributionOpenMode({ type: "financial", note });
+                setModalOpen(true);
+              }}
+            />
             <PendingApprovals
               incoming={pendingIncoming}
               outgoing={pendingOutgoing}
@@ -645,7 +672,11 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=…`}
       <ContributionModal
         choreVp={choreVpTiers}
         open={modalOpen}
-        onClose={() => setModalOpen(false)}
+        onClose={() => {
+          setModalOpen(false);
+          setContributionOpenMode(null);
+        }}
+        openMode={contributionOpenMode}
         onSubmit={handleSubmitRequest}
         busy={submitting}
         partnerName={partner?.display_name ?? "your partner"}

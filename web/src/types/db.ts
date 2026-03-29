@@ -23,6 +23,14 @@ export type Household = {
   chore_vp_pending_medium?: number | null;
   chore_vp_pending_high?: number | null;
   chore_vp_pending_requested_by?: string | null;
+  /** free | pro — set by Stripe webhook only. */
+  subscription_tier?: "free" | "pro" | null;
+  stripe_customer_id?: string | null;
+  stripe_subscription_id?: string | null;
+  /** Grace access after cancel (ISO). */
+  pro_access_until?: string | null;
+  /** Optional ZIP/postal for “near you” hire-help map links. */
+  service_area_zip?: string | null;
 };
 
 export type ContributionStatus = "pending" | "approved" | "rejected";

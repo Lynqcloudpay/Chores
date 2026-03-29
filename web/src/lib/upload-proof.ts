@@ -2,12 +2,11 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 export const PROOF_BUCKET = "contribution-proofs";
 
+/** Single proof file per contribution: `{householdId}/{contributionId}.{ext}` (legacy `-after` paths are no longer written). */
 export function proofObjectPath(
   householdId: string,
   contributionId: string,
   contentType: string,
-  /** Optional suffix for a second file on the same contribution (legacy). */
-  slot: "before" | "after" = "before",
 ): string {
   const ext =
     contentType === "application/pdf"
@@ -17,8 +16,7 @@ export function proofObjectPath(
         : contentType === "image/webp"
           ? "webp"
           : "jpg";
-  const base = slot === "after" ? `${contributionId}-after` : contributionId;
-  return `${householdId}/${base}.${ext}`;
+  return `${householdId}/${contributionId}.${ext}`;
 }
 
 export async function uploadContributionProof(
@@ -27,9 +25,8 @@ export async function uploadContributionProof(
   contributionId: string,
   blob: Blob,
   contentType: string,
-  slot: "before" | "after" = "before",
 ): Promise<{ path: string }> {
-  const path = proofObjectPath(householdId, contributionId, contentType, slot);
+  const path = proofObjectPath(householdId, contributionId, contentType);
   const { error } = await supabase.storage.from(PROOF_BUCKET).upload(path, blob, {
     contentType,
     upsert: false,

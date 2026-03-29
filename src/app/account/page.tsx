@@ -9,12 +9,12 @@ import { ChoreVpSettings } from "@/components/ChoreVpSettings";
 import { JoinHouseholdWithCodeForm } from "@/components/JoinHouseholdWithCodeForm";
 import { LeaveHouseholdSection } from "@/components/LeaveHouseholdSection";
 import { ResetHouseholdSection } from "@/components/ResetHouseholdSection";
+import { SubscriptionSection } from "@/components/SubscriptionSection";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { sessionOrRecover } from "@/lib/supabase/session";
 import type { Household, Profile } from "@/types/db";
 
 export default function AccountPage() {
-  const router = useRouter();
   const [userId, setUserId] = useState<string | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [partner, setPartner] = useState<Profile | null>(null);
@@ -47,6 +47,19 @@ export default function AccountPage() {
     if (othersRes.error) setPartner(null);
     else setPartner((othersRes.data?.[0] as Profile | undefined) ?? null);
   }, []);
+
+  const router = useRouter();
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !userId) return;
+    const q = new URLSearchParams(window.location.search);
+    if (q.get("subscription") !== "success") return;
+    setLoading(true);
+    void load(userId).finally(() => {
+      setLoading(false);
+      router.replace("/account", { scroll: false });
+    });
+  }, [userId, load, router]);
 
   useEffect(() => {
     if (!isSupabaseConfigured()) {
@@ -245,6 +258,8 @@ export default function AccountPage() {
                 }}
               />
             ) : null}
+
+            {household ? <SubscriptionSection household={household} /> : null}
 
             {household ? (
               <section id="invite-partner" className="scroll-mt-24 rounded-2xl border border-outline-variant/20 bg-surface-container-low/50 p-5">

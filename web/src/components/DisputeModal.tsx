@@ -184,7 +184,7 @@ export function DisputeModal({ row, open, phase, onClose, partnerName, onResolve
                     onClick={() => setLightbox({ url: previewUrl, isPdf: previewPdf })}
                     className="text-sm font-semibold text-primary underline underline-offset-2"
                   >
-                    {previewAfterUrl ? "View before" : "View attached proof"}
+                    {previewAfterUrl ? "View proof (1 of 2)" : "View attached proof"}
                   </button>
                 ) : null}
                 {previewAfterUrl ? (
@@ -193,7 +193,7 @@ export function DisputeModal({ row, open, phase, onClose, partnerName, onResolve
                     onClick={() => setLightbox({ url: previewAfterUrl, isPdf: previewAfterPdf })}
                     className="text-sm font-semibold text-primary underline underline-offset-2"
                   >
-                    View after
+                    View second image (legacy)
                   </button>
                 ) : null}
               </div>
