@@ -68,29 +68,42 @@ export default function AccountPage() {
       return;
     }
     const supabase = getSupabaseBrowserClient();
+    /**
+     * Safety: sometimes INITIAL_SESSION/auth callbacks never settle in production
+     * (network hiccup, storage/cookie race). Don’t leave the user stuck.
+     */
+    const safety = window.setTimeout(() => setLoading(false), 12000);
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event !== "INITIAL_SESSION" && event !== "SIGNED_IN" && event !== "SIGNED_OUT") return;
-      let effective = session;
-      if (event === "INITIAL_SESSION") {
-        effective = await sessionOrRecover(supabase, session);
-      }
-      const uid = effective?.user?.id ?? null;
-      setEmail(effective?.user?.email ?? null);
-      setUserId(uid);
-      if (uid) {
-        setLoading(true);
-        void load(uid).finally(() => setLoading(false));
-      } else {
-        setEmail(null);
-        setProfile(null);
-        setPartner(null);
-        setHousehold(null);
+      try {
+        let effective = session;
+        if (event === "INITIAL_SESSION") {
+          effective = await sessionOrRecover(supabase, session);
+        }
+        const uid = effective?.user?.id ?? null;
+        setEmail(effective?.user?.email ?? null);
+        setUserId(uid);
+        if (uid) {
+          setLoading(true);
+          void load(uid).finally(() => setLoading(false));
+        } else {
+          setEmail(null);
+          setProfile(null);
+          setPartner(null);
+          setHousehold(null);
+          setLoading(false);
+        }
+      } catch (e) {
+        console.warn("auth state", e);
         setLoading(false);
       }
     });
-    return () => subscription.unsubscribe();
+    return () => {
+      window.clearTimeout(safety);
+      subscription.unsubscribe();
+    };
   }, [load]);
 
   async function signOut() {
